@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.env
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+.env
+
+# macOS
+.DS_Store
+
+# Data files (large CIPO downloads)
+backend/data/*.zip
+backend/data/*.csv
+backend/data/*.xml
