@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 import uvicorn
 from dotenv import load_dotenv
 
-from parser import parse_office_action
+from doc_parser import parse_office_action
 from cipo import fetch_application
 from analyzer import analyze_office_action
 

@@ -9,7 +9,7 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5f7fa;
+      background: #f0f2f5;
       color: #1a1a2e;
       min-height: 100vh;
     }
@@ -17,187 +17,221 @@
     header {
       background: #1a1a2e;
       color: white;
-      padding: 20px 40px;
+      padding: 18px 40px;
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
     }
-    header h1 { font-size: 1.4rem; font-weight: 600; }
-    header span { font-size: 0.85rem; opacity: 0.6; }
+    header h1 { font-size: 1.3rem; font-weight: 600; }
+    header span { font-size: 0.82rem; opacity: 0.5; }
 
-    main {
-      max-width: 900px;
-      margin: 40px auto;
-      padding: 0 24px;
-    }
+    main { max-width: 960px; margin: 36px auto; padding: 0 24px; }
 
     .card {
       background: white;
-      border-radius: 12px;
-      padding: 32px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-      margin-bottom: 24px;
-    }
-
-    .card h2 {
-      font-size: 1.05rem;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-
-    .card p.subtitle {
-      font-size: 0.88rem;
-      color: #666;
+      border-radius: 10px;
+      padding: 28px 32px;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.08);
       margin-bottom: 20px;
-      line-height: 1.5;
     }
 
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+    .card p.sub { font-size: 0.86rem; color: #666; line-height: 1.55; margin-bottom: 18px; }
+
+    /* Upload */
     .upload-area {
-      border: 2px dashed #c8d0e0;
+      border: 2px dashed #d0d7e2;
       border-radius: 8px;
-      padding: 36px;
+      padding: 32px;
       text-align: center;
-      transition: border-color 0.2s, background 0.2s;
+      transition: border-color 0.15s, background 0.15s;
     }
-    .upload-area.dragover { border-color: #4a6fa5; background: #f0f4ff; }
+    .upload-area.dragover { border-color: #4a6fa5; background: #f4f7ff; }
     .upload-area input { display: none; }
-    .upload-area label { cursor: pointer; display: block; }
-    .upload-area .icon { font-size: 2rem; margin-bottom: 10px; }
-    .upload-area .hint { font-size: 0.82rem; color: #999; margin-top: 6px; }
+    .upload-area label { cursor: pointer; }
+    .upload-area .icon { font-size: 1.8rem; margin-bottom: 8px; }
+    .upload-area .hint { font-size: 0.8rem; color: #aaa; margin-top: 6px; }
 
     .btn {
       background: #1a1a2e;
       color: white;
       border: none;
-      padding: 11px 26px;
-      border-radius: 8px;
-      font-size: 0.92rem;
+      padding: 10px 24px;
+      border-radius: 7px;
+      font-size: 0.9rem;
       cursor: pointer;
-      margin-top: 18px;
-      transition: background 0.2s;
+      margin-top: 16px;
+      transition: background 0.15s;
     }
-    .btn:hover { background: #2d2d50; }
+    .btn:hover { background: #2e2e50; }
     .btn:disabled { background: #bbb; cursor: not-allowed; }
 
-    .status {
-      margin-top: 12px;
-      font-size: 0.85rem;
-      color: #4a6fa5;
-      min-height: 18px;
-    }
+    .status { margin-top: 10px; font-size: 0.83rem; color: #4a6fa5; min-height: 18px; }
 
     /* Results */
     #results { display: none; }
-
-    .meta-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .meta-item .label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #999;
-      margin-bottom: 2px;
-    }
-    .meta-item .value {
-      font-size: 0.92rem;
-      font-weight: 500;
-      color: #1a1a2e;
-    }
-
-    .convention-box {
-      background: #f0f4ff;
-      border-left: 4px solid #4a6fa5;
-      border-radius: 0 6px 6px 0;
-      padding: 12px 16px;
-      font-size: 0.88rem;
-      color: #2a3a6a;
-      margin-bottom: 24px;
-    }
-    .convention-box strong { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #999; margin-bottom: 4px; }
-
-    .class-section { margin-bottom: 24px; }
-    .class-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-    .class-badge {
-      background: #1a1a2e;
-      color: white;
-      font-size: 0.78rem;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 20px;
-    }
-    .class-type {
-      font-size: 0.82rem;
-      color: #888;
-      font-weight: 500;
-    }
-
-    .objection-row {
-      background: #fafafa;
-      border: 1px solid #e8ecf0;
-      border-radius: 8px;
-      padding: 14px 16px;
-      margin-bottom: 8px;
-    }
-    .objection-term {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: #c0392b;
-      margin-bottom: 4px;
-    }
-    .objection-reason {
-      font-size: 0.82rem;
-      color: #666;
-      margin-bottom: 6px;
-    }
-    .objection-context {
-      font-size: 0.82rem;
-      color: #444;
-      background: #fff;
-      border: 1px solid #e0e4ea;
-      border-radius: 4px;
-      padding: 8px 10px;
-      line-height: 1.5;
-    }
 
     .deadline-banner {
       background: #fff8e1;
       border-left: 4px solid #f59e0b;
       border-radius: 0 6px 6px 0;
-      padding: 10px 16px;
-      font-size: 0.88rem;
-      color: #7c5c00;
-      margin-bottom: 20px;
-    }
-    .deadline-banner strong { font-weight: 600; }
-
-    .empty-state {
-      text-align: center;
-      color: #aaa;
-      font-size: 0.88rem;
-      padding: 20px 0;
+      padding: 9px 14px;
+      font-size: 0.86rem;
+      color: #7c5800;
+      margin-bottom: 18px;
     }
 
-    .phase-grid {
+    .meta-row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 12px;
+      margin-bottom: 16px;
     }
-    .phase {
+    .meta-item .lbl {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #aaa;
+      margin-bottom: 2px;
+    }
+    .meta-item .val { font-size: 0.9rem; font-weight: 500; }
+    .meta-item .val.muted { color: #aaa; font-style: italic; font-weight: 400; }
+
+    .convention-box {
+      background: #f4f7ff;
+      border-left: 3px solid #4a6fa5;
+      border-radius: 0 5px 5px 0;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      color: #2a3a6a;
+    }
+    .convention-box .lbl {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #8899cc;
+      margin-bottom: 3px;
+    }
+
+    /* Specification document */
+    .spec-doc { font-family: "Georgia", serif; }
+
+    .class-block { margin-bottom: 28px; }
+
+    .class-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e8ecf2;
+    }
+    .class-badge {
+      background: #1a1a2e;
+      color: white;
+      font-family: -apple-system, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.03em;
+    }
+    .class-type {
+      font-family: -apple-system, sans-serif;
+      font-size: 0.8rem;
+      color: #888;
+      font-weight: 500;
+    }
+    .objection-count {
+      margin-left: auto;
+      font-family: -apple-system, sans-serif;
+      font-size: 0.75rem;
+      color: #c0392b;
+      font-weight: 600;
+    }
+
+    .spec-text {
+      font-size: 0.95rem;
+      line-height: 1.75;
+      color: #222;
+    }
+
+    /* Highlighted objected terms */
+    .objected-term {
+      background: #fff3cd;
+      border-bottom: 2px solid #f59e0b;
+      border-radius: 2px;
+      padding: 0 2px;
+      cursor: pointer;
+      transition: background 0.12s;
+      position: relative;
+    }
+    .objected-term:hover { background: #ffe082; }
+    .objected-term.active { background: #ffd54f; }
+
+    /* Amendment panel */
+    #amendment-panel {
+      display: none;
+      position: fixed;
+      right: 0; top: 0; bottom: 0;
+      width: 360px;
+      background: white;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+      z-index: 100;
+      overflow-y: auto;
+      padding: 28px 24px;
+    }
+    #amendment-panel h3 { font-size: 1rem; margin-bottom: 6px; }
+    #amendment-panel .term-display {
+      background: #fff3cd;
+      border-bottom: 2px solid #f59e0b;
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-family: Georgia, serif;
+      font-size: 1rem;
+      font-weight: 600;
+      display: inline-block;
+      margin-bottom: 14px;
+    }
+    #amendment-panel .reason-tag {
+      background: #fce8e6;
+      color: #c0392b;
+      font-size: 0.75rem;
+      padding: 3px 9px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+    #amendment-panel .coming-soon {
       background: #f5f7fa;
       border-radius: 8px;
-      padding: 14px 18px;
+      padding: 20px;
+      text-align: center;
+      color: #888;
+      font-size: 0.85rem;
+      line-height: 1.6;
     }
-    .phase .label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #aaa; margin-bottom: 3px; }
-    .phase .title { font-size: 0.88rem; font-weight: 600; }
-    .pill { display: inline-block; margin-top: 6px; font-size: 0.7rem; padding: 2px 9px; border-radius: 20px; background: #e8edf5; color: #4a6fa5; }
+    #amendment-panel .coming-soon strong { display: block; color: #555; margin-bottom: 6px; }
+    #panel-close {
+      position: absolute;
+      top: 16px; right: 16px;
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: #888;
+      padding: 4px 8px;
+    }
+    #panel-close:hover { color: #333; }
+
+    /* Phase progress */
+    .phase-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .phase { background: #f5f7fa; border-radius: 7px; padding: 12px 16px; }
+    .phase .lbl { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #bbb; margin-bottom: 2px; }
+    .phase .title { font-size: 0.86rem; font-weight: 600; }
+    .pill { display: inline-block; margin-top: 5px; font-size: 0.68rem; padding: 2px 8px; border-radius: 20px; background: #e8edf5; color: #4a6fa5; }
     .pill.done { background: #e6f4ea; color: #2e7d32; }
   </style>
 </head>
@@ -208,15 +242,23 @@
   <span>CIPO specification amendment assistant</span>
 </header>
 
+<!-- Amendment side panel -->
+<div id="amendment-panel">
+  <button id="panel-close" title="Close">✕</button>
+  <h3>Objected Term</h3>
+  <div id="panel-term" class="term-display"></div><br>
+  <span id="panel-reason" class="reason-tag"></span>
+  <div class="coming-soon">
+    <strong>Amendment options — Phase 4</strong>
+    Proposed replacements drawn from the CIPO pre-approved goods &amp; services list, examination manual, and accepted trademark database will appear here.
+  </div>
+</div>
+
 <main>
 
   <div class="card">
     <h2>Upload CIPO Office Action</h2>
-    <p class="subtitle">
-      Upload the examiner's office action as a Word document (.docx). The tool will identify
-      the objected goods and services, explain why each was flagged, and display them in a
-      structured format ready for amendment.
-    </p>
+    <p class="sub">Upload the examiner's office action as a Word document (.docx). The tool will identify objected goods and services and display the full specification with objections highlighted.</p>
 
     <div class="upload-area" id="dropzone">
       <label for="fileInput">
@@ -231,69 +273,51 @@
     <div class="status" id="status"></div>
   </div>
 
-  <!-- Results -->
   <div id="results">
-    <div class="card">
-      <h2>Application Details</h2>
 
+    <div class="card">
       <div id="deadlineBanner" class="deadline-banner" style="display:none">
-        <strong>Response deadline:</strong> <span id="deadlineDate"></span>
+        ⚠ <strong>Response deadline:</strong> <span id="deadlineDate"></span>
       </div>
 
-      <div class="meta-grid">
+      <div class="meta-row">
         <div class="meta-item">
-          <div class="label">Application No.</div>
-          <div class="value" id="metaAppNumber">—</div>
+          <div class="lbl">Application No.</div>
+          <div class="val" id="metaApp">—</div>
         </div>
         <div class="meta-item">
-          <div class="label">Examiner</div>
-          <div class="value" id="metaExaminer">—</div>
+          <div class="lbl">Examiner</div>
+          <div class="val" id="metaExaminer">—</div>
         </div>
         <div class="meta-item">
-          <div class="label">Trademark</div>
-          <div class="value" id="metaTrademark">—</div>
-        </div>
-        <div class="meta-item">
-          <div class="label">Applicant</div>
-          <div class="value" id="metaApplicant">—</div>
+          <div class="lbl">Trademark</div>
+          <div class="val muted" id="metaTrademark">Available in Phase 3</div>
         </div>
       </div>
 
       <div class="convention-box">
-        <strong>Examiner's formatting convention</strong>
+        <div class="lbl">Examiner's objection convention</div>
         <span id="conventionText">—</span>
       </div>
     </div>
 
     <div class="card">
-      <h2>Objected Goods &amp; Services</h2>
-      <div id="objectionsList"></div>
+      <h2>Specification</h2>
+      <p class="sub" style="margin-bottom:20px">
+        Highlighted terms have been objected to by the examiner. Click any highlighted term to view amendment options.
+      </p>
+      <div class="spec-doc" id="specDoc"></div>
     </div>
+
   </div>
 
   <div class="card">
     <h2>Build Progress</h2>
     <div class="phase-grid">
-      <div class="phase">
-        <div class="label">Phase 1</div>
-        <div class="title">Project Setup</div>
-        <span class="pill done">Complete</span>
-      </div>
-      <div class="phase">
-        <div class="label">Phase 2</div>
-        <div class="title">Objection Parser</div>
-        <span class="pill done">Complete</span>
-      </div>
-      <div class="phase">
-        <div class="label">Phase 3</div>
-        <div class="title">CIPO Data Sources</div>
-        <span class="pill">Up next</span>
-      </div>
-      <div class="phase">
-        <div class="label">Phase 4</div>
-        <div class="title">Amendment Engine</div>
-        <span class="pill">Planned</span>
-      </div>
+      <div class="phase"><div class="lbl">Phase 1</div><div class="title">Project Setup</div><span class="pill done">Complete</span></div>
+      <div class="phase"><div class="lbl">Phase 2</div><div class="title">Objection Parser</div><span class="pill done">Complete</span></div>
+      <div class="phase"><div class="lbl">Phase 3</div><div class="title">CIPO Data Sources</div><span class="pill">Up next</span></div>
+      <div class="phase"><div class="lbl">Phase 4</div><div class="title">Amendment Engine</div><span class="pill">Planned</span></div>
     </div>
   </div>
 
@@ -302,123 +326,133 @@
 <script>
   const fileInput = document.getElementById("fileInput");
   const uploadBtn = document.getElementById("uploadBtn");
-  const statusEl = document.getElementById("status");
+  const statusEl  = document.getElementById("status");
   const resultsEl = document.getElementById("results");
-  const dropzone = document.getElementById("dropzone");
+  const dropzone  = document.getElementById("dropzone");
+  const panel     = document.getElementById("amendment-panel");
 
   // Drag and drop
-  dropzone.addEventListener("dragover", e => { e.preventDefault(); dropzone.classList.add("dragover"); });
+  dropzone.addEventListener("dragover",  e => { e.preventDefault(); dropzone.classList.add("dragover"); });
   dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
   dropzone.addEventListener("drop", e => {
-    e.preventDefault();
-    dropzone.classList.remove("dragover");
-    const file = e.dataTransfer.files[0];
-    if (file && file.name.endsWith(".docx")) {
-      fileInput.files = e.dataTransfer.files;
-      uploadBtn.disabled = false;
-      statusEl.textContent = "Selected: " + file.name;
-    } else {
-      statusEl.textContent = "Please drop a .docx file.";
-    }
+    e.preventDefault(); dropzone.classList.remove("dragover");
+    const f = e.dataTransfer.files[0];
+    if (f && f.name.endsWith(".docx")) { fileInput.files = e.dataTransfer.files; enable(f.name); }
+    else statusEl.textContent = "Please drop a .docx file.";
   });
+  fileInput.addEventListener("change", () => { if (fileInput.files[0]) enable(fileInput.files[0].name); });
 
-  fileInput.addEventListener("change", () => {
-    if (fileInput.files.length > 0) {
-      uploadBtn.disabled = false;
-      statusEl.textContent = "Selected: " + fileInput.files[0].name;
-    }
-  });
+  function enable(name) { uploadBtn.disabled = false; statusEl.textContent = "Selected: " + name; }
 
+  // Panel close
+  document.getElementById("panel-close").addEventListener("click", closePanel);
+  function closePanel() {
+    panel.style.display = "none";
+    document.querySelectorAll(".objected-term.active").forEach(el => el.classList.remove("active"));
+  }
+
+  // Upload & analyze
   uploadBtn.addEventListener("click", async () => {
     const file = fileInput.files[0];
     if (!file) return;
-
     uploadBtn.disabled = true;
     resultsEl.style.display = "none";
-    statusEl.textContent = "Analyzing office action... this may take 15–30 seconds.";
+    closePanel();
+    statusEl.textContent = "Analyzing office action… this may take 20–30 seconds.";
 
-    const formData = new FormData();
-    formData.append("file", file);
+    const fd = new FormData();
+    fd.append("file", file);
 
     try {
-      const res = await fetch("/api/parse-objection", { method: "POST", body: formData });
-      if (!res.ok) {
-        const err = await res.json();
-        statusEl.textContent = "Error: " + (err.detail || "Unknown error");
-        return;
-      }
+      const res = await fetch("/api/parse-objection", { method: "POST", body: fd });
+      if (!res.ok) { const e = await res.json(); statusEl.textContent = "Error: " + (e.detail || "Unknown"); return; }
       const data = await res.json();
-      renderResults(data);
+      render(data);
       statusEl.textContent = "";
-    } catch (err) {
+    } catch(e) {
       statusEl.textContent = "Could not connect to server. Is the backend running?";
     } finally {
       uploadBtn.disabled = false;
     }
   });
 
-  function renderResults(data) {
+  function render(data) {
     const a = data.analysis;
-    const cipo = data.cipo_application;
 
     // Meta
-    document.getElementById("metaAppNumber").textContent = a.application_number || "—";
+    document.getElementById("metaApp").textContent      = a.application_number || "—";
     document.getElementById("metaExaminer").textContent = a.examiner_name || "—";
-    document.getElementById("metaTrademark").textContent = (cipo && cipo.trademark_name) || "—";
-    document.getElementById("metaApplicant").textContent = (cipo && cipo.applicant) || "—";
+    if (a.trademark_name) {
+      const el = document.getElementById("metaTrademark");
+      el.textContent = a.trademark_name;
+      el.classList.remove("muted");
+    }
     document.getElementById("conventionText").textContent = a.formatting_convention || "—";
 
-    // Deadline banner
     if (a.response_deadline) {
       document.getElementById("deadlineDate").textContent = a.response_deadline;
       document.getElementById("deadlineBanner").style.display = "block";
     }
 
-    // Objections grouped by class
-    const list = document.getElementById("objectionsList");
-    list.innerHTML = "";
+    // Specification
+    const doc = document.getElementById("specDoc");
+    doc.innerHTML = "";
 
-    if (!a.objections || a.objections.length === 0) {
-      list.innerHTML = '<div class="empty-state">No objected terms identified.</div>';
-    } else {
-      // Group by nice_class + goods_or_services
-      const groups = {};
-      for (const obj of a.objections) {
-        const key = obj.nice_class + "|" + obj.goods_or_services;
-        if (!groups[key]) groups[key] = { nice_class: obj.nice_class, goods_or_services: obj.goods_or_services, items: [] };
-        groups[key].items.push(obj);
-      }
+    for (const cls of (a.classes || [])) {
+      const block = document.createElement("div");
+      block.className = "class-block";
 
-      for (const key of Object.keys(groups)) {
-        const g = groups[key];
-        const section = document.createElement("div");
-        section.className = "class-section";
-        section.innerHTML = `
-          <div class="class-header">
-            <span class="class-badge">Class ${g.nice_class || "?"}</span>
-            <span class="class-type">${g.goods_or_services}</span>
-          </div>
-        `;
-        for (const item of g.items) {
-          const row = document.createElement("div");
-          row.className = "objection-row";
-          row.innerHTML = `
-            <div class="objection-term">${escHtml(item.objected_term)}</div>
-            <div class="objection-reason">${escHtml(item.objection_reason)}</div>
-            <div class="objection-context">${escHtml(item.full_context)}</div>
-          `;
-          section.appendChild(row);
-        }
-        list.appendChild(section);
-      }
+      const count = cls.objected_terms ? cls.objected_terms.length : 0;
+      const totalOccurrences = countOccurrences(cls.marked_text || "", cls.objected_terms || []);
+
+      block.innerHTML = `
+        <div class="class-heading">
+          <span class="class-badge">Class ${esc(cls.nice_class)}</span>
+          <span class="class-type">${esc(cls.goods_or_services)}</span>
+          ${totalOccurrences > 0 ? `<span class="objection-count">${totalOccurrences} objection${totalOccurrences !== 1 ? "s" : ""}</span>` : ""}
+        </div>
+        <div class="spec-text">${buildMarkedText(cls.marked_text || "", cls.objected_terms || [])}</div>
+      `;
+      doc.appendChild(block);
     }
+
+    // Wire up click handlers
+    doc.querySelectorAll(".objected-term").forEach(el => {
+      el.addEventListener("click", () => {
+        document.querySelectorAll(".objected-term.active").forEach(e => e.classList.remove("active"));
+        el.classList.add("active");
+        document.getElementById("panel-term").textContent   = el.dataset.term;
+        document.getElementById("panel-reason").textContent = el.dataset.reason;
+        panel.style.display = "block";
+      });
+    });
 
     resultsEl.style.display = "block";
     resultsEl.scrollIntoView({ behavior: "smooth" });
   }
 
-  function escHtml(str) {
-    return String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  // Replace {{term}} markers with highlighted spans
+  function buildMarkedText(markedText, objectedTerms) {
+    // Build a reason lookup
+    const reasons = {};
+    for (const t of objectedTerms) reasons[t.term.toLowerCase()] = t.reason || "objected by examiner";
+
+    let html = esc(markedText);
+    // Replace escaped markers {{term}} → <span>
+    html = html.replace(/\{\{([^}]+)\}\}/g, (_, term) => {
+      const reason = reasons[term.toLowerCase()] || "objected by examiner";
+      return `<span class="objected-term" data-term="${esc(term)}" data-reason="${esc(reason)}">${esc(term)}</span>`;
+    });
+    return html;
+  }
+
+  function countOccurrences(markedText, objectedTerms) {
+    const matches = markedText.match(/\{\{[^}]+\}\}/g);
+    return matches ? matches.length : 0;
+  }
+
+  function esc(s) {
+    return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 </script>
 </body>
