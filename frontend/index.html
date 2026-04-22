@@ -291,7 +291,11 @@
         </div>
         <div class="meta-item">
           <div class="lbl">Trademark</div>
-          <div class="val muted" id="metaTrademark">Available in Phase 3</div>
+          <div class="val" id="metaTrademark">—</div>
+        </div>
+        <div class="meta-item">
+          <div class="lbl">Applicant</div>
+          <div class="val" id="metaApplicant">—</div>
         </div>
       </div>
 
@@ -380,13 +384,10 @@
     const a = data.analysis;
 
     // Meta
-    document.getElementById("metaApp").textContent      = a.application_number || "—";
-    document.getElementById("metaExaminer").textContent = a.examiner_name || "—";
-    if (a.trademark_name) {
-      const el = document.getElementById("metaTrademark");
-      el.textContent = a.trademark_name;
-      el.classList.remove("muted");
-    }
+    document.getElementById("metaApp").textContent       = a.application_number || "—";
+    document.getElementById("metaExaminer").textContent  = a.examiner_name || "—";
+    document.getElementById("metaTrademark").textContent = a.trademark_name || "—";
+    document.getElementById("metaApplicant").textContent = a.applicant_name || "—";
     document.getElementById("conventionText").textContent = a.formatting_convention || "—";
 
     if (a.response_deadline) {

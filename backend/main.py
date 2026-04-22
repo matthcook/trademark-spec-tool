@@ -91,16 +91,14 @@ async def parse_objection(file: UploadFile = File(...)):
         # Step 3: Analyze with Claude
         analysis = analyze_office_action(parsed, cipo_app)
 
+        # Merge trademark/applicant from the document into the analysis
+        if parsed.trademark_name and not analysis.get("trademark_name"):
+            analysis["trademark_name"] = parsed.trademark_name
+        if parsed.applicant_name and not analysis.get("applicant_name"):
+            analysis["applicant_name"] = parsed.applicant_name
+
         return {
             "analysis": analysis,
-            "cipo_application": {
-                "trademark_name": cipo_app.trademark_name if cipo_app else None,
-                "applicant": cipo_app.applicant if cipo_app else None,
-                "status": cipo_app.status if cipo_app else None,
-                "filing_date": cipo_app.filing_date if cipo_app else None,
-                "specification": cipo_app.specification if cipo_app else None,
-                "source_url": cipo_app.source_url if cipo_app else None,
-            } if cipo_app else None,
             "cipo_fetch_error": cipo_error,
         }
 
