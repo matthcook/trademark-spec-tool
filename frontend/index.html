@@ -18,150 +18,204 @@
       background: #1a1a2e;
       color: white;
       padding: 20px 40px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
     }
-
     header h1 { font-size: 1.4rem; font-weight: 600; }
     header span { font-size: 0.85rem; opacity: 0.6; }
 
     main {
-      max-width: 860px;
-      margin: 48px auto;
+      max-width: 900px;
+      margin: 40px auto;
       padding: 0 24px;
     }
 
     .card {
       background: white;
       border-radius: 12px;
-      padding: 36px;
+      padding: 32px;
       box-shadow: 0 2px 12px rgba(0,0,0,0.07);
       margin-bottom: 24px;
     }
 
     .card h2 {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 600;
-      margin-bottom: 8px;
-      color: #1a1a2e;
+      margin-bottom: 6px;
     }
 
-    .card p {
-      font-size: 0.9rem;
-      color: #555;
-      line-height: 1.6;
+    .card p.subtitle {
+      font-size: 0.88rem;
+      color: #666;
       margin-bottom: 20px;
+      line-height: 1.5;
     }
 
     .upload-area {
       border: 2px dashed #c8d0e0;
       border-radius: 8px;
-      padding: 40px;
+      padding: 36px;
       text-align: center;
-      cursor: pointer;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, background 0.2s;
     }
-
-    .upload-area:hover { border-color: #4a6fa5; }
-
+    .upload-area.dragover { border-color: #4a6fa5; background: #f0f4ff; }
     .upload-area input { display: none; }
-
-    .upload-area label {
-      cursor: pointer;
-      display: block;
-    }
-
+    .upload-area label { cursor: pointer; display: block; }
     .upload-area .icon { font-size: 2rem; margin-bottom: 10px; }
-
-    .upload-area .hint {
-      font-size: 0.85rem;
-      color: #888;
-      margin-top: 8px;
-    }
+    .upload-area .hint { font-size: 0.82rem; color: #999; margin-top: 6px; }
 
     .btn {
       background: #1a1a2e;
       color: white;
       border: none;
-      padding: 12px 28px;
+      padding: 11px 26px;
       border-radius: 8px;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       cursor: pointer;
-      margin-top: 20px;
+      margin-top: 18px;
       transition: background 0.2s;
     }
-
     .btn:hover { background: #2d2d50; }
-    .btn:disabled { background: #aaa; cursor: not-allowed; }
+    .btn:disabled { background: #bbb; cursor: not-allowed; }
 
     .status {
-      margin-top: 16px;
+      margin-top: 12px;
       font-size: 0.85rem;
       color: #4a6fa5;
-      min-height: 20px;
+      min-height: 18px;
     }
 
-    .phases {
+    /* Results */
+    #results { display: none; }
+
+    .meta-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      gap: 12px;
+      margin-bottom: 20px;
     }
 
-    .phase {
-      background: #f5f7fa;
-      border-radius: 8px;
-      padding: 16px 20px;
-    }
-
-    .phase .label {
+    .meta-item .label {
       font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #888;
-      margin-bottom: 4px;
+      color: #999;
+      margin-bottom: 2px;
     }
-
-    .phase .title {
-      font-size: 0.9rem;
-      font-weight: 600;
+    .meta-item .value {
+      font-size: 0.92rem;
+      font-weight: 500;
       color: #1a1a2e;
     }
 
-    .phase .pill {
-      display: inline-block;
-      margin-top: 8px;
-      font-size: 0.72rem;
-      padding: 2px 10px;
+    .convention-box {
+      background: #f0f4ff;
+      border-left: 4px solid #4a6fa5;
+      border-radius: 0 6px 6px 0;
+      padding: 12px 16px;
+      font-size: 0.88rem;
+      color: #2a3a6a;
+      margin-bottom: 24px;
+    }
+    .convention-box strong { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #999; margin-bottom: 4px; }
+
+    .class-section { margin-bottom: 24px; }
+    .class-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .class-badge {
+      background: #1a1a2e;
+      color: white;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 3px 10px;
       border-radius: 20px;
-      background: #e8edf5;
-      color: #4a6fa5;
+    }
+    .class-type {
+      font-size: 0.82rem;
+      color: #888;
+      font-weight: 500;
     }
 
-    .phase.done .pill {
-      background: #e6f4ea;
-      color: #2e7d32;
+    .objection-row {
+      background: #fafafa;
+      border: 1px solid #e8ecf0;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
     }
+    .objection-term {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #c0392b;
+      margin-bottom: 4px;
+    }
+    .objection-reason {
+      font-size: 0.82rem;
+      color: #666;
+      margin-bottom: 6px;
+    }
+    .objection-context {
+      font-size: 0.82rem;
+      color: #444;
+      background: #fff;
+      border: 1px solid #e0e4ea;
+      border-radius: 4px;
+      padding: 8px 10px;
+      line-height: 1.5;
+    }
+
+    .deadline-banner {
+      background: #fff8e1;
+      border-left: 4px solid #f59e0b;
+      border-radius: 0 6px 6px 0;
+      padding: 10px 16px;
+      font-size: 0.88rem;
+      color: #7c5c00;
+      margin-bottom: 20px;
+    }
+    .deadline-banner strong { font-weight: 600; }
+
+    .empty-state {
+      text-align: center;
+      color: #aaa;
+      font-size: 0.88rem;
+      padding: 20px 0;
+    }
+
+    .phase-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .phase {
+      background: #f5f7fa;
+      border-radius: 8px;
+      padding: 14px 18px;
+    }
+    .phase .label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #aaa; margin-bottom: 3px; }
+    .phase .title { font-size: 0.88rem; font-weight: 600; }
+    .pill { display: inline-block; margin-top: 6px; font-size: 0.7rem; padding: 2px 9px; border-radius: 20px; background: #e8edf5; color: #4a6fa5; }
+    .pill.done { background: #e6f4ea; color: #2e7d32; }
   </style>
 </head>
 <body>
 
 <header>
-  <div>
-    <h1>Trademark Spec Tool</h1>
-    <span>CIPO specification amendment assistant</span>
-  </div>
+  <h1>Trademark Spec Tool</h1>
+  <span>CIPO specification amendment assistant</span>
 </header>
 
 <main>
 
   <div class="card">
-    <h2>Upload CIPO Objection Letter</h2>
-    <p>
-      Upload the objection letter as a Word document (.docx). The tool will identify
-      which goods and services have been objected to, explain why, and propose
-      compliant amendment options with citations.
+    <h2>Upload CIPO Office Action</h2>
+    <p class="subtitle">
+      Upload the examiner's office action as a Word document (.docx). The tool will identify
+      the objected goods and services, explain why each was flagged, and display them in a
+      structured format ready for amendment.
     </p>
 
     <div class="upload-area" id="dropzone">
@@ -173,27 +227,67 @@
       <input type="file" id="fileInput" accept=".docx" />
     </div>
 
-    <button class="btn" id="uploadBtn" disabled>Analyze Objection</button>
+    <button class="btn" id="uploadBtn" disabled>Analyze Office Action</button>
     <div class="status" id="status"></div>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+    <div class="card">
+      <h2>Application Details</h2>
+
+      <div id="deadlineBanner" class="deadline-banner" style="display:none">
+        <strong>Response deadline:</strong> <span id="deadlineDate"></span>
+      </div>
+
+      <div class="meta-grid">
+        <div class="meta-item">
+          <div class="label">Application No.</div>
+          <div class="value" id="metaAppNumber">—</div>
+        </div>
+        <div class="meta-item">
+          <div class="label">Examiner</div>
+          <div class="value" id="metaExaminer">—</div>
+        </div>
+        <div class="meta-item">
+          <div class="label">Trademark</div>
+          <div class="value" id="metaTrademark">—</div>
+        </div>
+        <div class="meta-item">
+          <div class="label">Applicant</div>
+          <div class="value" id="metaApplicant">—</div>
+        </div>
+      </div>
+
+      <div class="convention-box">
+        <strong>Examiner's formatting convention</strong>
+        <span id="conventionText">—</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Objected Goods &amp; Services</h2>
+      <div id="objectionsList"></div>
+    </div>
   </div>
 
   <div class="card">
     <h2>Build Progress</h2>
-    <div class="phases">
-      <div class="phase done">
+    <div class="phase-grid">
+      <div class="phase">
         <div class="label">Phase 1</div>
         <div class="title">Project Setup</div>
-        <span class="pill">Complete</span>
+        <span class="pill done">Complete</span>
       </div>
       <div class="phase">
         <div class="label">Phase 2</div>
         <div class="title">Objection Parser</div>
-        <span class="pill">Up next</span>
+        <span class="pill done">Complete</span>
       </div>
       <div class="phase">
         <div class="label">Phase 3</div>
-        <div class="title">Data Sources</div>
-        <span class="pill">Planned</span>
+        <div class="title">CIPO Data Sources</div>
+        <span class="pill">Up next</span>
       </div>
       <div class="phase">
         <div class="label">Phase 4</div>
@@ -208,12 +302,30 @@
 <script>
   const fileInput = document.getElementById("fileInput");
   const uploadBtn = document.getElementById("uploadBtn");
-  const status = document.getElementById("status");
+  const statusEl = document.getElementById("status");
+  const resultsEl = document.getElementById("results");
+  const dropzone = document.getElementById("dropzone");
+
+  // Drag and drop
+  dropzone.addEventListener("dragover", e => { e.preventDefault(); dropzone.classList.add("dragover"); });
+  dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+  dropzone.addEventListener("drop", e => {
+    e.preventDefault();
+    dropzone.classList.remove("dragover");
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith(".docx")) {
+      fileInput.files = e.dataTransfer.files;
+      uploadBtn.disabled = false;
+      statusEl.textContent = "Selected: " + file.name;
+    } else {
+      statusEl.textContent = "Please drop a .docx file.";
+    }
+  });
 
   fileInput.addEventListener("change", () => {
     if (fileInput.files.length > 0) {
       uploadBtn.disabled = false;
-      status.textContent = `Selected: ${fileInput.files[0].name}`;
+      statusEl.textContent = "Selected: " + fileInput.files[0].name;
     }
   });
 
@@ -222,25 +334,92 @@
     if (!file) return;
 
     uploadBtn.disabled = true;
-    status.textContent = "Uploading...";
+    resultsEl.style.display = "none";
+    statusEl.textContent = "Analyzing office action... this may take 15–30 seconds.";
 
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      const res = await fetch("/api/parse-objection", {
-        method: "POST",
-        body: formData,
-      });
+      const res = await fetch("/api/parse-objection", { method: "POST", body: formData });
+      if (!res.ok) {
+        const err = await res.json();
+        statusEl.textContent = "Error: " + (err.detail || "Unknown error");
+        return;
+      }
       const data = await res.json();
-      status.textContent = data.message;
+      renderResults(data);
+      statusEl.textContent = "";
     } catch (err) {
-      status.textContent = "Error connecting to server. Is the backend running?";
+      statusEl.textContent = "Could not connect to server. Is the backend running?";
     } finally {
       uploadBtn.disabled = false;
     }
   });
-</script>
 
+  function renderResults(data) {
+    const a = data.analysis;
+    const cipo = data.cipo_application;
+
+    // Meta
+    document.getElementById("metaAppNumber").textContent = a.application_number || "—";
+    document.getElementById("metaExaminer").textContent = a.examiner_name || "—";
+    document.getElementById("metaTrademark").textContent = (cipo && cipo.trademark_name) || "—";
+    document.getElementById("metaApplicant").textContent = (cipo && cipo.applicant) || "—";
+    document.getElementById("conventionText").textContent = a.formatting_convention || "—";
+
+    // Deadline banner
+    if (a.response_deadline) {
+      document.getElementById("deadlineDate").textContent = a.response_deadline;
+      document.getElementById("deadlineBanner").style.display = "block";
+    }
+
+    // Objections grouped by class
+    const list = document.getElementById("objectionsList");
+    list.innerHTML = "";
+
+    if (!a.objections || a.objections.length === 0) {
+      list.innerHTML = '<div class="empty-state">No objected terms identified.</div>';
+    } else {
+      // Group by nice_class + goods_or_services
+      const groups = {};
+      for (const obj of a.objections) {
+        const key = obj.nice_class + "|" + obj.goods_or_services;
+        if (!groups[key]) groups[key] = { nice_class: obj.nice_class, goods_or_services: obj.goods_or_services, items: [] };
+        groups[key].items.push(obj);
+      }
+
+      for (const key of Object.keys(groups)) {
+        const g = groups[key];
+        const section = document.createElement("div");
+        section.className = "class-section";
+        section.innerHTML = `
+          <div class="class-header">
+            <span class="class-badge">Class ${g.nice_class || "?"}</span>
+            <span class="class-type">${g.goods_or_services}</span>
+          </div>
+        `;
+        for (const item of g.items) {
+          const row = document.createElement("div");
+          row.className = "objection-row";
+          row.innerHTML = `
+            <div class="objection-term">${escHtml(item.objected_term)}</div>
+            <div class="objection-reason">${escHtml(item.objection_reason)}</div>
+            <div class="objection-context">${escHtml(item.full_context)}</div>
+          `;
+          section.appendChild(row);
+        }
+        list.appendChild(section);
+      }
+    }
+
+    resultsEl.style.display = "block";
+    resultsEl.scrollIntoView({ behavior: "smooth" });
+  }
+
+  function escHtml(str) {
+    return String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+</script>
 </body>
 </html>

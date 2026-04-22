@@ -1,17 +1,22 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+import os
+import tempfile
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import uvicorn
-import os
 from dotenv import load_dotenv
+
+from parser import parse_office_action
+from cipo import fetch_application
+from analyzer import analyze_office_action
 
 load_dotenv()
 
 app = FastAPI(
     title="Trademark Spec Tool",
     description="Automates CIPO trademark specification amendments",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 app.add_middleware(
@@ -21,7 +26,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve the frontend
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
 app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 
@@ -33,17 +37,75 @@ def serve_frontend():
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "version": "0.1.0"}
+    return {"status": "ok", "version": "0.2.0"}
 
 
-# --- Placeholder endpoints (to be built out in later phases) ---
+@app.get("/api/application/{app_number}")
+def lookup_application(app_number: str):
+    """Fetch trademark application details from CIPO by application number."""
+    try:
+        app_data = fetch_application(app_number)
+        return {
+            "application_number": app_data.application_number,
+            "trademark_name": app_data.trademark_name,
+            "applicant": app_data.applicant,
+            "status": app_data.status,
+            "filing_date": app_data.filing_date,
+            "specification": app_data.specification,
+            "source_url": app_data.source_url,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Could not fetch from CIPO: {str(e)}")
+
 
 @app.post("/api/parse-objection")
 async def parse_objection(file: UploadFile = File(...)):
-    """Phase 2: Accept a CIPO objection letter (.docx) and extract objected goods/services."""
+    """
+    Accept a CIPO office action (.docx), parse it, fetch the CIPO application,
+    and return structured objection data.
+    """
     if not file.filename.endswith(".docx"):
         raise HTTPException(status_code=400, detail="Please upload a .docx (Word) file.")
-    return {"message": "Objection parser coming in Phase 2", "filename": file.filename}
+
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not configured.")
+
+    # Save the uploaded file temporarily
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+        tmp.write(await file.read())
+        tmp_path = tmp.name
+
+    try:
+        # Step 1: Parse the .docx
+        parsed = parse_office_action(tmp_path)
+
+        # Step 2: Fetch CIPO application data if we found an application number
+        cipo_app = None
+        cipo_error = None
+        if parsed.application_number:
+            try:
+                cipo_app = fetch_application(parsed.application_number)
+            except Exception as e:
+                cipo_error = str(e)
+
+        # Step 3: Analyze with Claude
+        analysis = analyze_office_action(parsed, cipo_app)
+
+        return {
+            "analysis": analysis,
+            "cipo_application": {
+                "trademark_name": cipo_app.trademark_name if cipo_app else None,
+                "applicant": cipo_app.applicant if cipo_app else None,
+                "status": cipo_app.status if cipo_app else None,
+                "filing_date": cipo_app.filing_date if cipo_app else None,
+                "specification": cipo_app.specification if cipo_app else None,
+                "source_url": cipo_app.source_url if cipo_app else None,
+            } if cipo_app else None,
+            "cipo_fetch_error": cipo_error,
+        }
+
+    finally:
+        os.unlink(tmp_path)
 
 
 @app.post("/api/propose-amendments")
