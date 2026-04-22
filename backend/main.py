@@ -10,14 +10,23 @@ from dotenv import load_dotenv
 from doc_parser import parse_office_action
 from cipo import fetch_application
 from analyzer import analyze_office_action
+from cipo_resources import init_db, load_all, search_specificity, search_tem, get_metadata, resources_loaded
 
 load_dotenv()
 
 app = FastAPI(
     title="Trademark Spec Tool",
     description="Automates CIPO trademark specification amendments",
-    version="0.2.0",
+    version="0.3.0",
 )
+
+
+@app.on_event("startup")
+async def startup_event():
+    init_db()
+    if not resources_loaded():
+        import threading
+        threading.Thread(target=load_all, daemon=True).start()
 
 app.add_middleware(
     CORSMiddleware,
@@ -104,6 +113,32 @@ async def parse_objection(file: UploadFile = File(...)):
 
     finally:
         os.unlink(tmp_path)
+
+
+@app.get("/api/resources/status")
+def resource_status():
+    """Check whether CIPO reference resources are loaded."""
+    meta = get_metadata()
+    return {
+        "loaded": resources_loaded(),
+        "sggsm_downloaded": meta.get("sggsm"),
+        "tem_downloaded": meta.get("tem"),
+    }
+
+
+@app.post("/api/resources/reload")
+def reload_resources():
+    """Re-download and re-index all CIPO reference resources."""
+    import threading
+    threading.Thread(target=load_all, daemon=True).start()
+    return {"message": "Resource download started in background."}
+
+
+@app.get("/api/resources/search")
+def search_resources(term: str, nice_class: str = None):
+    """Search the Specificity Guidelines for a term."""
+    results = search_specificity(term, nice_class)
+    return {"term": term, "nice_class": nice_class, "results": results}
 
 
 @app.post("/api/propose-amendments")
