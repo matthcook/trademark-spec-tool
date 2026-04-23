@@ -9,103 +9,54 @@ import re
 
 # ── Web research helpers ───────────────────────────────────────────────────────
 
-def _duckduckgo_instant(query: str) -> str:
-    """Return DuckDuckGo instant-answer text for a query, or empty string."""
-    try:
-        r = httpx.get(
-            "https://api.duckduckgo.com/",
-            params={"q": query, "format": "json", "no_html": "1",
-                    "skip_disambig": "1", "kl": "ca-en"},
-            headers={"User-Agent": "Mozilla/5.0 (compatible; trademark-tool/1.0)"},
-            timeout=8,
-            follow_redirects=True,
-        )
-        data = r.json()
-        parts = []
-        if data.get("AbstractText"):
-            parts.append(data["AbstractText"])
-        for topic in (data.get("RelatedTopics") or [])[:2]:
-            if isinstance(topic, dict) and topic.get("Text"):
-                parts.append(topic["Text"])
-        return " ".join(parts)
-    except Exception:
-        return ""
-
-
-def _find_trademark_website(trademark_name: str) -> str | None:
-    """Check whether a .com or .ca website exists for this trademark name."""
-    slug = re.sub(r"[^a-z0-9]", "", trademark_name.lower().replace(" ", ""))
-    if not slug:
-        return None
-    for tld in (".com", ".ca"):
-        url = f"https://www.{slug}{tld}"
-        try:
-            r = httpx.get(url, timeout=5, follow_redirects=True)
-            if r.status_code < 400:
-                return str(r.url)
-        except Exception:
-            pass
-    return None
-
-
 def research_context(applicant_name: str, trademark_name: str) -> dict:
     """
-    Research the applicant's business and whether the trademark is in use online.
+    Use Claude's built-in web search to research the applicant's business and
+    find evidence of trademark use online.
     Returns {"blurb": str | None, "trademark_url": str | None}.
+
+    The web_search_20250305 tool is executed server-side by Anthropic — no
+    client-side loop is required; the model searches and responds in one call.
     """
     if not applicant_name and not trademark_name:
         return {"blurb": None, "trademark_url": None}
 
-    applicant_info = _duckduckgo_instant(applicant_name) if applicant_name else ""
-    trademark_url  = _find_trademark_website(trademark_name) if trademark_name else None
-
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-
-    findings = []
-    if applicant_info:
-        findings.append(f"Web search for \"{applicant_name}\": {applicant_info}")
-    if trademark_url:
-        findings.append(f"Active website found for \"{trademark_name}\": {trademark_url}")
-
-    findings_block = (
-        "\n".join(findings)
-        if findings
-        else "No web search results found — use your general knowledge where applicable."
-    )
 
     prompt = f"""You are assisting a Canadian trademark agent preparing an office action response.
 
-Applicant: {applicant_name or "unknown"}
-Trademark: "{trademark_name or "unknown"}"
+Search the web and answer two questions:
+1. What kind of business or entity is "{applicant_name}"? (industry, products/services they offer)
+2. Is the trademark "{trademark_name}" visibly in active commercial use online? Find a URL if possible.
 
-Research findings:
-{findings_block}
-
-Write a single concise paragraph (3–5 sentences) that:
-1. Describes what kind of business or entity {applicant_name or "this applicant"} appears to be (industry, products or services they offer)
-2. Notes whether the trademark "{trademark_name}" appears to be in active commercial use online
-3. Mentions the website naturally if one was confirmed above
-
-Be factual and professional. If information is limited, acknowledge it briefly. Do not invent specifics.
-
-Return only a JSON object (no markdown fences):
-{{"blurb": "...", "trademark_url": {json.dumps(trademark_url)}}}"""
+Return ONLY a JSON object — no markdown, no explanation, no other text:
+{{
+  "blurb": "3–5 sentence paragraph: describe the applicant's business, then note whether the trademark is in active use and mention the URL if you found one",
+  "trademark_url": "the most direct URL showing the trademark in use (homepage, product page, etc.), or null"
+}}"""
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=512,
+        max_tokens=600,
+        tools=[{"type": "web_search_20250305", "name": "web_search"}],
         messages=[{"role": "user", "content": prompt}],
     )
 
-    raw = response.content[0].text.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    result = json.loads(raw.strip())
-    if trademark_url and not result.get("trademark_url"):
-        result["trademark_url"] = trademark_url
-    return result
+    # Concatenate all text blocks (the model may split its response)
+    full_text = "".join(
+        block.text for block in response.content
+        if hasattr(block, "text") and block.text
+    ).strip()
+
+    if not full_text:
+        return {"blurb": None, "trademark_url": None}
+
+    if full_text.startswith("```"):
+        full_text = full_text.split("```")[1]
+        if full_text.startswith("json"):
+            full_text = full_text[4:]
+
+    return json.loads(full_text.strip())
 
 
 # ── Amendment suggestions ──────────────────────────────────────────────────────
