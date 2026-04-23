@@ -9,7 +9,7 @@ from pydantic import BaseModel
 import uvicorn
 from dotenv import load_dotenv
 
-from doc_parser import parse_office_action
+from doc_parser import parse_office_action, extract_document_debug
 from cipo import fetch_application
 from analyzer import analyze_office_action, generate_amendment_suggestions, research_context
 from cipo_resources import init_db, load_all, search_specificity, search_tem, search_gsm, get_metadata, resources_loaded, gsm_loaded
@@ -271,6 +271,28 @@ async def suggest_amendments(body: AmendmentRequest):
         "suggestions": suggestions,
         "suggestion_error": suggestion_error,
     }
+
+
+@app.post("/api/debug-parse")
+async def debug_parse(file: UploadFile = File(...)):
+    """
+    Return raw paragraph and table text extracted from a .docx without any
+    analysis. Use this to diagnose why an application number or spec is not
+    being found.
+    """
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+        tmp.write(await file.read())
+        tmp_path = tmp.name
+    try:
+        result = extract_document_debug(tmp_path)
+        # Also run the application number extractor so we can see what it finds
+        parsed = parse_office_action(tmp_path)
+        result["extracted_app_number"] = parsed.application_number
+        result["extracted_trademark"] = parsed.trademark_name
+        result["extracted_applicant"] = parsed.applicant_name
+        return result
+    finally:
+        os.unlink(tmp_path)
 
 
 if __name__ == "__main__":
