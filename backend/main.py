@@ -94,41 +94,39 @@ async def parse_objection(file: UploadFile = File(...)):
         cipo_app = None
         cipo_error = None
         cipo_spec_loaded = False
-        lookup_number = parsed.application_number or parsed.ir_number
-        if lookup_number:
-            try:
-                cipo_app = fetch_application(lookup_number)
-                cipo_spec_loaded = bool(cipo_app and cipo_app.specification)
-                # If primary number returned no spec but we have an IR number, try that
-                if not cipo_spec_loaded and parsed.ir_number and lookup_number != parsed.ir_number:
-                    try:
-                        ir_app = fetch_application(parsed.ir_number)
-                        if ir_app and ir_app.specification:
-                            cipo_app = ir_app
-                            cipo_spec_loaded = True
-                    except Exception:
-                        pass
-            except Exception as e:
-                cipo_error = str(e)
-                # Fall back to IR number if app number lookup failed entirely
-                if parsed.ir_number and parsed.ir_number != lookup_number:
-                    try:
-                        cipo_app = fetch_application(parsed.ir_number)
-                        cipo_spec_loaded = bool(cipo_app and cipo_app.specification)
-                        cipo_error = None
-                    except Exception as e2:
-                        cipo_error = f"App number lookup failed ({e}); IR number lookup also failed ({e2})"
+
+        # Try all available numbers; stop as soon as one returns a specification
+        numbers_to_try = [n for n in [parsed.application_number, parsed.ir_number] if n]
+        if numbers_to_try:
+            for number in numbers_to_try:
+                try:
+                    result = fetch_application(number)
+                    if result and result.specification:
+                        cipo_app = result
+                        cipo_spec_loaded = True
+                        break
+                    elif result and not cipo_app:
+                        cipo_app = result   # keep stub so we have source_url etc.
+                except Exception as e:
+                    cipo_error = str(e)
         else:
             cipo_error = "No application number or IR number found in document — could not fetch full specification from CIPO"
 
         # Step 3: Analyze with Claude
         analysis = analyze_office_action(parsed, cipo_app)
 
-        # Merge trademark/applicant from the document into the analysis
+        # Merge parser-extracted fields into analysis (parser sees tables; Claude only sees paragraphs)
+        if parsed.application_number and not analysis.get("application_number"):
+            analysis["application_number"] = parsed.application_number
         if parsed.trademark_name and not analysis.get("trademark_name"):
             analysis["trademark_name"] = parsed.trademark_name
         if parsed.applicant_name and not analysis.get("applicant_name"):
             analysis["applicant_name"] = parsed.applicant_name
+
+        # Set a descriptive error if spec simply wasn't found (no exception thrown)
+        if not cipo_spec_loaded and not cipo_error:
+            num_tried = parsed.application_number or parsed.ir_number
+            cipo_error = f"Specification not found on CIPO for {num_tried} — response may be incomplete"
 
         return {
             "analysis": analysis,
