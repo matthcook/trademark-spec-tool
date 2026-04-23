@@ -121,8 +121,8 @@ async def parse_objection(file: UploadFile = File(...)):
             traceback.print_exc()
             raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
-        # Merge parser-extracted fields into analysis (parser sees tables; Claude only sees paragraphs)
-        if parsed.application_number and not analysis.get("application_number"):
+        # Always use parser's application number — it reads tables that Claude never sees
+        if parsed.application_number:
             analysis["application_number"] = parsed.application_number
         if parsed.trademark_name and not analysis.get("trademark_name"):
             analysis["trademark_name"] = parsed.trademark_name
@@ -164,6 +164,76 @@ def resource_status():
         "gsm_loaded": gsm_loaded(),
         "gsm_downloaded": meta.get("gsm"),
     }
+
+
+class LoadSpecRequest(BaseModel):
+    spec_text: str
+    existing_analysis: dict
+
+
+@app.post("/api/load-spec")
+async def load_spec(body: LoadSpecRequest):
+    """
+    Merge a user-pasted CIPO specification into an existing analysis.
+    Parses the spec text into classes and updates/adds entries in the analysis.
+    """
+    import asyncio
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not configured.")
+    try:
+        updated = await asyncio.to_thread(_merge_spec_into_analysis, body.spec_text, body.existing_analysis)
+        return {"analysis": updated}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Spec merge failed: {str(e)}")
+
+
+def _merge_spec_into_analysis(spec_text: str, analysis: dict) -> dict:
+    """Use Claude to parse the pasted spec and merge it into the existing analysis."""
+    import anthropic, json
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+    existing_classes = json.dumps(analysis.get("classes", []), indent=2)
+
+    prompt = f"""You are updating a trademark analysis with a complete specification from CIPO.
+
+The existing analysis already has these classes (with objected terms identified):
+{existing_classes}
+
+The complete CIPO specification text (pasted by the user) is:
+{spec_text}
+
+Your task:
+1. Parse the CIPO spec into classes (identified by "Class XX" headers or Nice class numbers)
+2. For each class in the spec, check if it already exists in the existing analysis:
+   - If YES: update its marked_text to use the FULL spec text for that class, keeping all existing {{{{objected_term}}}} markers intact
+   - If NO: add it as a new entry with empty objected_terms array
+3. Keep all existing objected_terms and their {{{{...}}}} markers exactly as-is
+4. Return the complete updated classes array as JSON
+
+Return ONLY a JSON array of class objects — no markdown, no explanation:
+[
+  {{
+    "nice_class": "09",
+    "goods_or_services": "Goods or Services",
+    "marked_text": "full spec text with {{{{objected terms}}}} wrapped",
+    "objected_terms": [...]
+  }}
+]"""
+
+    message = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=4000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    raw = message.content[0].text.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    updated_classes = json.loads(raw.strip())
+    result = dict(analysis)
+    result["classes"] = updated_classes
+    return result
 
 
 @app.post("/api/resources/reload")
