@@ -266,12 +266,17 @@ def search_tem(query: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def search_gsm(term: str, nice_class: str = None, limit: int = 20) -> list[dict]:
-    """Search the G&S Manual for pre-approved terms matching the query."""
+def search_gsm(term: str, nice_class: str = None, limit: int = 500) -> list[dict]:
+    """
+    Search the G&S Manual for pre-approved terms matching the query.
+    Returns up to `limit` results within the specified class, then supplements
+    with cross-class results if fewer than 30 class-specific matches are found.
+    """
     conn = get_db()
     term_like = f"%{term.lower()}%"
 
     if nice_class:
+        cls = nice_class.zfill(2)
         rows = conn.execute(
             """SELECT nice_class, term, term_status, notes
                FROM gsm_terms
@@ -279,8 +284,21 @@ def search_gsm(term: str, nice_class: str = None, limit: int = 20) -> list[dict]
                AND nice_class = ?
                AND term_status = 1
                ORDER BY length(term) ASC LIMIT ?""",
-            (term_like, nice_class.zfill(2), limit)
+            (term_like, cls, limit)
         ).fetchall()
+        # If the class-specific result is sparse, also pull cross-class terms
+        # so Claude has more options to consider
+        if len(rows) < 30:
+            extra = conn.execute(
+                """SELECT nice_class, term, term_status, notes
+                   FROM gsm_terms
+                   WHERE lower(term) LIKE ?
+                   AND nice_class != ?
+                   AND term_status = 1
+                   ORDER BY length(term) ASC LIMIT ?""",
+                (term_like, cls, limit - len(rows))
+            ).fetchall()
+            rows = list(rows) + list(extra)
     else:
         rows = conn.execute(
             """SELECT nice_class, term, term_status, notes

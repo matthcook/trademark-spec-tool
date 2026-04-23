@@ -186,7 +186,7 @@ async def suggest_amendments(body: AmendmentRequest):
 
     import asyncio
 
-    gsm = search_gsm(body.term, body.nice_class or None, limit=15)
+    gsm = search_gsm(body.term, body.nice_class or None)
     sg  = search_specificity(body.term, body.nice_class or None)
 
     try:

@@ -70,66 +70,76 @@ def generate_amendment_suggestions(
     specificity_guidance: list,
     business_context: str = "",
 ) -> list[dict]:
-    """Ask Claude to propose tiered replacement terms with citations."""
+    """
+    Review ALL pre-approved G&S Manual matches and select the most applicable
+    ones for this applicant, using business context for intelligent ranking.
+    """
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
-    gsm_block = ""
-    if gsm_matches:
-        lines = "\n".join(
-            f'  - "{m["term"]}"' + (f' (note: {m["notes"]})' if m.get("notes") else "")
-            for m in gsm_matches[:15]
-        )
-        gsm_block = f"\nPre-approved G&S Manual terms for Class {nice_class} that partially match:\n{lines}\n"
+    # Group GSM matches: same-class first, then cross-class
+    same_class = [m for m in gsm_matches if m.get("nice_class","").lstrip("0") == str(int(nice_class or "0"))]
+    cross_class = [m for m in gsm_matches if m not in same_class]
+
+    def _fmt_gsm(matches):
+        lines = []
+        for m in matches:
+            line = f'  • {m["term"]}'
+            if m.get("nice_class","").lstrip("0") != str(int(nice_class or "0")):
+                line += f' [Class {m["nice_class"].lstrip("0")}]'
+            if m.get("notes"):
+                line += f'  — {m["notes"]}'
+            lines.append(line)
+        return "\n".join(lines)
+
+    gsm_section = ""
+    if same_class:
+        gsm_section += f"\nClass {nice_class} pre-approved terms containing \"{term}\" ({len(same_class)} total):\n{_fmt_gsm(same_class)}\n"
+    if cross_class:
+        gsm_section += f"\nPre-approved terms from other classes that may inform wording ({len(cross_class)} total):\n{_fmt_gsm(cross_class[:100])}\n"
 
     sg_block = ""
     if specificity_guidance:
         lines = "\n".join(
-            f'  - "{g["term"]}": {g["guidance"]}'
-            for g in specificity_guidance[:8]
+            f'  • "{g["term"]}": {g["guidance"]}'
+            for g in specificity_guidance[:6]
         )
-        sg_block = f"\nCIPO Specificity Guidelines relevant entries:\n{lines}\n"
+        sg_block = f"\nCIPO Specificity Guidelines:\n{lines}\n"
 
-    context_block = ""
-    if business_context:
-        context_block = f"\nApplicant context: {business_context}\n"
+    context_block = f"\nApplicant context: {business_context}\n" if business_context else ""
 
-    tier_instruction = (
-        "Order your suggestions from most to least likely to be applicable given the applicant's business."
+    tier_note = (
+        "Tier 1 = best match for this applicant's specific use case. Tier 2 = other valid options."
         if business_context
-        else "Order your suggestions from most to least specific."
+        else "Tier 1 = most specific and likely to satisfy the examiner. Tier 2 = alternatives."
     )
 
     prompt = f"""You are a Canadian trademark agent advising on a CIPO office action response.
 
-The examiner has objected to the following term in Class {nice_class}:
-  Term: "{term}"
-  Examiner's reason: {reason or "not specific enough / not in ordinary commercial terms"}
-{context_block}{gsm_block}{sg_block}
-Your task: propose 3–5 specific replacement terms that would satisfy the examiner.
+Objected term: "{term}" (Class {nice_class})
+Examiner's reason: {reason or "not specific enough / not in ordinary commercial terms"}
+{context_block}{gsm_section}{sg_block}
+Your task: review the complete list of pre-approved terms above and SELECT the 6–10 most applicable replacements for this specific applicant.
 
 Rules:
-- Prefer terms already in the CIPO pre-approved G&S Manual (listed above) — cite them as source
-- If constructing a new term, follow the specificity guidelines and Canadian trademark practice
-- Each replacement must be more specific than the objected term
-- Keep replacements concise (as they appear in a trademark specification)
-- Do not include terms that span multiple classes
-- {tier_instruction}
+1. STRONGLY prefer terms from the pre-approved list above — these will be accepted by CIPO without further objection
+2. If recommending a term from the list, copy it EXACTLY as written
+3. Only construct a new term (not from the list) if no pre-approved option adequately fits — label it "Constructed per specificity guidelines"
+4. Each replacement must be more specific than "{term}"
+5. {tier_note}
 
-Return a JSON array (no markdown fences, no extra text):
+Return a JSON array only — no markdown, no explanation:
 [
   {{
-    "replacement": "the proposed replacement term",
-    "rationale": "one sentence explaining why this satisfies the examiner",
-    "source": "CIPO G&S Manual, Class {nice_class}" or "Constructed per specificity guidelines",
+    "replacement": "exact term from the list, or constructed term",
+    "rationale": "one sentence: why this fits this applicant's use case",
+    "source": "CIPO G&S Manual, Class {nice_class}" or "CIPO G&S Manual, Class XX" or "Constructed per specificity guidelines",
     "tier": 1
   }}
-]
-
-Use tier 1 for the most applicable suggestions, tier 2 for alternatives."""
+]"""
 
     message = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=1200,
+        max_tokens=2000,
         messages=[{"role": "user", "content": prompt}],
     )
 
