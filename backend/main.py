@@ -4,13 +4,14 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 import uvicorn
 from dotenv import load_dotenv
 
 from doc_parser import parse_office_action
 from cipo import fetch_application
-from analyzer import analyze_office_action
-from cipo_resources import init_db, load_all, search_specificity, search_tem, get_metadata, resources_loaded
+from analyzer import analyze_office_action, generate_amendment_suggestions
+from cipo_resources import init_db, load_all, search_specificity, search_tem, search_gsm, get_metadata, resources_loaded, gsm_loaded
 
 load_dotenv()
 
@@ -123,6 +124,8 @@ def resource_status():
         "loaded": resources_loaded(),
         "sggsm_downloaded": meta.get("sggsm"),
         "tem_downloaded": meta.get("tem"),
+        "gsm_loaded": gsm_loaded(),
+        "gsm_downloaded": meta.get("gsm"),
     }
 
 
@@ -141,10 +144,41 @@ def search_resources(term: str, nice_class: str = None):
     return {"term": term, "nice_class": nice_class, "results": results}
 
 
-@app.post("/api/propose-amendments")
-async def propose_amendments(file: UploadFile = File(...)):
-    """Phase 4: Return amendment options with citations for each objected item."""
-    return {"message": "Amendment engine coming in Phase 4"}
+@app.get("/api/resources/search-gsm")
+def search_gsm_terms(term: str, nice_class: str = None):
+    """Search the pre-approved G&S Manual for matching terms."""
+    results = search_gsm(term, nice_class)
+    return {"term": term, "nice_class": nice_class, "results": results}
+
+
+class AmendmentRequest(BaseModel):
+    term: str
+    nice_class: str = ""
+    reason: str = ""
+
+
+@app.post("/api/suggest-amendments")
+async def suggest_amendments(body: AmendmentRequest):
+    """Return amendment options with citations for an objected term."""
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not configured.")
+
+    gsm     = search_gsm(body.term, body.nice_class or None, limit=15)
+    sg      = search_specificity(body.term, body.nice_class or None)
+    try:
+        suggestions = generate_amendment_suggestions(
+            body.term, body.nice_class, body.reason, gsm, sg
+        )
+    except Exception as e:
+        suggestions = []
+
+    return {
+        "term": body.term,
+        "nice_class": body.nice_class,
+        "gsm_matches": gsm,
+        "specificity_guidance": sg,
+        "suggestions": suggestions,
+    }
 
 
 if __name__ == "__main__":

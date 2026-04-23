@@ -47,12 +47,28 @@ def init_db():
         );
         CREATE INDEX IF NOT EXISTS idx_tem_heading ON tem_sections(heading COLLATE NOCASE);
 
+        CREATE TABLE IF NOT EXISTS gsm_terms (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            nice_class  TEXT NOT NULL,
+            term        TEXT NOT NULL,
+            term_status INTEGER,
+            notes       TEXT,
+            source      TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_gsm_class ON gsm_terms(nice_class);
+        CREATE INDEX IF NOT EXISTS idx_gsm_term  ON gsm_terms(term COLLATE NOCASE);
+
         CREATE TABLE IF NOT EXISTS resource_metadata (
             resource    TEXT PRIMARY KEY,
             downloaded  TEXT,
             source_url  TEXT
         );
     """)
+    # Add columns that may be missing from an older gsm_terms schema
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(gsm_terms)")}
+    for col, typedef in [("term_status", "INTEGER"), ("notes", "TEXT"), ("source", "TEXT")]:
+        if col not in existing:
+            conn.execute(f"ALTER TABLE gsm_terms ADD COLUMN {col} {typedef}")
     conn.commit()
     conn.close()
 
@@ -195,10 +211,17 @@ def load_tem():
     print(f"  Loaded into database.")
 
 
+def load_gsm():
+    """Run the G&S Manual scraper and populate gsm_terms."""
+    from scrape_gsm import scrape as _scrape_gsm
+    _scrape_gsm()
+
+
 def load_all():
     init_db()
     load_sggsm()
     load_tem()
+    load_gsm()
     print("Done. CIPO resources ready.")
 
 
@@ -243,6 +266,47 @@ def search_tem(query: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def search_gsm(term: str, nice_class: str = None, limit: int = 20) -> list[dict]:
+    """Search the G&S Manual for pre-approved terms matching the query."""
+    conn = get_db()
+    term_like = f"%{term.lower()}%"
+
+    if nice_class:
+        rows = conn.execute(
+            """SELECT nice_class, term, term_status, notes
+               FROM gsm_terms
+               WHERE lower(term) LIKE ?
+               AND nice_class = ?
+               AND term_status = 1
+               ORDER BY length(term) ASC LIMIT ?""",
+            (term_like, nice_class.zfill(2), limit)
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            """SELECT nice_class, term, term_status, notes
+               FROM gsm_terms
+               WHERE lower(term) LIKE ?
+               AND term_status = 1
+               ORDER BY length(term) ASC LIMIT ?""",
+            (term_like, limit)
+        ).fetchall()
+
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def gsm_loaded() -> bool:
+    if not os.path.exists(DB_PATH):
+        return False
+    conn = get_db()
+    try:
+        count = conn.execute("SELECT COUNT(*) FROM gsm_terms").fetchone()[0]
+    except Exception:
+        count = 0
+    conn.close()
+    return count > 0
+
+
 def get_metadata() -> dict:
     """Return download dates for each resource."""
     conn = get_db()
@@ -252,7 +316,7 @@ def get_metadata() -> dict:
 
 
 def resources_loaded() -> bool:
-    """Check if resources have been loaded into the DB."""
+    """Check if the core SGGSM resource has been loaded."""
     if not os.path.exists(DB_PATH):
         return False
     conn = get_db()

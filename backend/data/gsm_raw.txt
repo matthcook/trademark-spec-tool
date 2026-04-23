@@ -1,0 +1,287 @@
+Français
+Jobs 
+	
+Immigration 
+	
+Travel 
+	
+Business 
+	
+Benefits 
+	
+Health 
+	
+Taxes 
+	
+More services 
+ Table of Contents
+ Search
+More 
+Back to Top
+ Expand All
+Specificity Guidelines for Goods and Services
+Introduction
+Class 1
+Class 2
+Class 3
+Class 4
+Class 5
+Class 6
+Class 7
+Class 8
+Class 9
+Class 10
+Class 11
+Class 12
+Class 13
+Class 14
+Class 15
+Class 16
+Class 17
+Class 18
+Class 19
+Class 20
+Class 21
+Class 22
+Class 24
+Class 25
+Class 26
+Class 27
+Class 28
+Class 29
+Class 30
+Class 31
+Class 32
+Class 33
+Class 34
+Class 35
+Class 36
+Class 37
+Class 38
+Class 39
+Class 40
+Class 41
+Class 42
+Class 43
+Class 44
+Class 45
+Unclassifiable without further specification
+Info 
+WCAG VERSION: Specificity Guidelines for the Goods and Services Manual
+Specificity Guidelines for Goods and Services
+Introduction
+
+The purpose of the Specificity Guidelines is to provide an indication of the level of specificity required by the Registrar for certain types of goods or services. Entries are listed in a “fill-in-the-blank” type format with explanations of what needs to be specified, as well as some examples of acceptable goods or services.
+
+The Specificity Guidelines are organized by Nice class and include an “Unclassifiable” category. The “Unclassifiable” category lists entries which cannot be placed in an appropriate Nice class without further specificity.
+
+In instances where disparities arise between the Specificity Guidelines and the Goods and Services Manual, please prioritize the guidance provided in the Goods and Services Manual.
+
+Class 1
+
+agglutinants [indicate the specific area of use, namely, agglutinants for concrete, agglutinants for clay, agglutinants for use in the manufacture of pharmaceuticals, etc.]
+
+alcohol [indicate the specific area of use, namely, alcohols for use in fuel as an additive, alcohol for use in manufacturing cosmetics, alcohol for use in manufacturing pharmaceuticals, etc., OR indicate the specific type, namely, butanol, methanol, rubbing, etc. The statement can be classified in various Nice classes depending on the further specification.]
+
+ammonia [indicate the specific area of use, namely, ammonia for use in fertilizers, ammonia for use in drug manufacturing, etc.]
+
+antioxidants [indicate the specific area of use, namely, antioxidants for use in the manufacture of cosmetics, antioxidants for use in the manufacture of food and beverages, antioxidants for use in the manufacture of pharmaceuticals, etc., OR indicate the specific type of antioxidants, namely, etc.]
+
+auxiliary fluids for use with abrasives [indicate the specific area of use OR industry, namely, auxiliary fluids for use with abrasives for cleaning and polishing silver, auxiliary fluids for use with abrasives for the oil well industry, etc.]
+
+bacteria [indicate the specific area of use, namely, bacteria for the production of biochemicals, bacteria for use in food manufacturing, bacteria for wastewater treatment, etc.]
+
+biochemicals [indicate the specific type, namely, textile biochemicals, biochemical catalysts, etc.]
+
+biological preparations for use in industry and science [indicate the specific area of use, namely, biological microorganisms used in fermentation of silage, biological preparations for use as assay samples for laboratory purposes, etc.]
+
+catalysts [indicate the specific area of use, namely, biochemical catalysts, catalysts for use in the manufacture of plastics, catalysts for use in the manufacture of rubber, etc.]
+
+chemical oxidants [indicate the specific area of use, namely, chemical oxidants for use in the manufacture of printed circuits, chemical oxidants for wastewater treatment, etc.]
+
+chemicals [indicate the specific type, namely, antifreeze chemicals, etc., OR indicate the specific area of use, namely, chemicals for use in the manufacture of soap, chemicals for use in lithography, chemicals for use in the treatment of waste water, etc.]
+
+chemicals for use in industry and science [indicate the specific area of use, namely, chemicals for use in the processing of natural rubber, chemicals for use in the manufacture of confectionery, chemicals for use in the oil refining industry, chemicals for use in chromatography, chemicals used in fermenting wine, industrial chemicals for use in the manufacture of varnish, etc., OR indicate the specific type of chemicals, namely, chemical reagents for use in genetic research, tempering chemicals for use in soldering, waste water treatment chemicals for industrial use, chemical preservatives for dough for industrial use, etc.]
+
+chemicals for use in the pharmaceutical industry [indicate the specific type of chemicals, namely, chemical additives for use in the manufacture of pharmaceuticals, chemical preparations for use in the manufacture of pharmaceuticals, chemical preparations containing enzymes for industrial use, active chemical ingredients for use in the manufacture of pharmaceuticals, etc.]
+
+chlorine [indicate the specific type, namely, liquid chlorine, chlorine dioxide, etc., OR indicate the specific area of use, namely, chlorine for swimming pools, chlorine for use in the manufacture of pharmaceuticals, etc.]
+
+emulsifiers [indicate the specific area of use, namely, emulsifiers for the manufacture of foods, emulsifiers for the manufacture of pharmaceuticals, emulsifiers for use in the manufacture of textiles, etc.]
+
+food additives [indicate the specific type of additives, namely, probiotic additives for use in the manufacture of food and beverages, pectin for the food industry, lecithin for the food industry, enzymes for the bakery industry, etc.]
+
+mordants [indicate the specific area of use, namely, mordants for metals, etc.]
+
+putties and other paste fillers [indicate the specific area of use, namely, putty for use by plumbers for affixing toilets, adhesive putty for household use, paste fillers for car body repair, paste fillers for vehicle bodywork, wood putty, wood fillers, etc., OR indicate the specific type of putties and paste fillers, namely, epoxy putty, etc.]
+
+surfactants [indicate the specific area of use, namely surfactants for use in the manufacture of hair shampoo, surfactants for use in the manufacture of synthetic detergents, etc.]
+
+waterproofing chemical compositions [indicate the specific area of use, namely, waterproofing chemical compositions for clothing, waterproofing chemicals for leather, waterproofing chemical compositions for wood and building construction surfaces, etc.]
+
+wetting agents [indicate the specific agents, namely, wetting agents for use in the manufacture of cosmetics, wetting agents for use in the manufacture of inks, wetting agents for use in the manufacture of paints, etc.]
+
+Class 2
+
+colourants [indicate the specific area of use, namely, colourants for use in the manufacture of cosmetics, colourants for use in the manufacture of food, etc., OR the specific type of colourants, namely, textile dyes, direct dyes, zinc oxide being pigment, holographic pigments, etc. The statement can be classified in various Nice classes depending on the further specification.]
+
+dyes [indicate the specific area of use, namely, clothing dyes, dyes for use on plastics, food dyes, etc., OR indicate the specific type of dyes, namely, acid dyes, alcohol soluble dyes, aniline dyes, sulphur dyes, etc. The statement can be classified in various Nice classes depending on the further specification.]
+
+lacquers [indicate the specific type, namely, bronzing lacquers, wood lacquers, etc.]
+
+mordants [indicate the specific area of use, namely, mordants for wood and leather, mordants for dyeing natural fibres, etc.]
+
+paint [indicate the specific type, namely, anti-fouling paint, artists' paints, bactericidal paints, house paint, waterproof paints, watercolour paints, etc., OR indicate the specific area of use, namely, paint for concrete floors, paint for industrial equipment and machinery, paint for use in industrial building construction, paint for use in the manufacture of furniture, paints for vehicle and automotive refinishes, paints for arts and crafts, etc.]
+
+varnishes [indicate the specific type of varnish, namely, copal, sumac for varnishes, dammar, etc., OR the specific field of use, namely, varnishes for protecting floors, varnishes for arts and crafts, etc.]
+
+Class 3
+
+abrasives [indicate the specific area of use, namely, abrasives for cleaning excess resins from grinding wheels, abrasives for preparing nail surfaces for nail polish, skin abrasives, etc., OR indicate the specific type, namely, abrasive sand, abrasive paper, abrasive cloth, etc. The statement can be classified in various Nice classes depending on the further specification.]
+
+bleach [indicate the specific area of use, namely, hair bleach, laundry bleach, etc.]
+
+non-medicated body care products [indicate the specific product, namely, body deodorants, hair care preparations, skin care preparations, bath soaps, etc.]
+
+cleaning preparations [Indicate the specific type, namely, all-purpose cleaning preparations, bathroom cleaning preparations, hand cleaning preparations, tooth cleaning preparations, etc.]
+
+non-medicated cosmetics products [indicate the specific product, namely, facial lotions, anti-aging cream, lip balm, eye gels, eye make-up, cosmetic masks, etc.]
+
+non-medicated cosmetics and toiletry preparations [indicate the specific type, namely, cosmetics for use on the skin, facial creams for cosmetic purposes, eyebrow cosmetics, cosmetics containing cannabis, cosmetics for children, age retardant lotion, body deodorants, eaux de perfume, baby shampoos, etc.]
+
+scouring preparations [indicate the specific form, namely, all purpose scouring liquids, all purpose scouring powders, scouring solutions, etc.]
+
+non-medicated skin care products [indicate the specific product, namely, skin moisturizer, skin care preparations, etc. The statement can be classified in various Nice classes depending on the further specification.]
+
+soap [indicate the specific type, namely, bar soap, bath soaps, cosmetic soap, hand soap, liquid hand soaps, etc. The statement can be classified in various Nice classes depending on the further specification.]
+
+Class 4
+
+dust absorbing, wetting and binding compositions [indicate the specific area of use, namely, dust absorbing, wetting and binding compositions to control dust pollution, dust absorbing compositions for use on unpaved roads, dust binding compositions for sweeping, etc., OR indicate the specific type, namely, petroleum-based dust absorbing compositions, etc.]
+
+fuel [indicate the specific area of use, namely, fuel for domestic heating, lamp fuels, lighting fuel, motor fuel, fuel for ships, etc., OR indicate the specific type of fuel, namely, xylene fuel, propane fuel, lump charcoal, liquid hydrogen fuel, ethanol fuels, etc.]
+
+lubricants [indicate the specific type, namely, all-purpose lubricants, automobile lubricants, drilling lubricants, industrial lubricants, lubricants for machines, motor vehicle lubricants, etc.]
+
+Class 5
+
+anesthetics [indicate the specific type, namely, surgical anesthetics, inhalant anesthetics, anesthetics for non-surgical use, topical anesthetics, etc.]
+
+aromatherapy preparations [indicate the specific type, namely, aromatherapy essential oils, aromatherapy skin scrubs, aromatherapy creams, etc.]  
+
+bee pollen [indicate the specific area of use, namely, bee pollen used as a dietary supplement, etc.]
+
+botanicals [must be further specified by naming the (a) disease; OR (b) disease group, type of disease, disorder or condition to be treated; OR (c) specific type of medication; e.g. botanicals for the treatment of cancer, botanicals for the treatment of colds and flu, botanicals for the treatment of inflammatory bowel disease, etc.]
+
+diagnostic reagents [indicate the specific area of use, namely, clinical diagnostic reagents, diagnostic reagents for medical purposes, diagnostic reagents for veterinary purposes, etc.]
+
+dietary and nutritional supplements for pets [must be further specified by naming the (a) disease; OR (b) disease group, type of disease, disorder or condition to be treated; OR (c) specific type of medication; e.g. dietary and nutritional supplements for pets for heart health, etc.]
+
+dietary supplements [indicate the specific type, namely, amino acid dietary supplements, glucose dietary supplements, protein dietary supplements, etc., OR indicate the specific area of use, namely, dietary supplements for reducing cholesterol, dietary supplements for controlling cholesterol, dietary supplements for maintaining normal blood pressure and heart function, etc.]
+
+disinfectants [indicate the specific type, namely, all purpose disinfectants, contact lens disinfectants, disinfectants for household use, disinfectants for sterilization, etc.]
+
+food supplements [indicate the specific type, namely, mineral food supplements, vitamin food supplements, hemp-based food supplements, dietary food supplements in the nature of mixed herbal infusions for maintaining normal blood pressure and heart function, etc.]
+
+herbal supplements [must be further specified by naming the (a) disease; OR (b) disease group, type of disease, disorder or condition to be treated; OR (c) specific type of medication; e.g. herbal supplements for the treatment of cancer, herbal supplements for general health and well-being, herbal supplements for the treatment of the respiratory system, etc.]
+
+herbal preparations in the form of powders, tablets, lotion, capsules and syrup [must be further specified by naming the (a) disease; OR (b) disease group, type of disease, disorder or condition to be treated; OR (c) specific type of medication e.g. herbal nutritional supplements in the form of powders for general health and well-being, herbal supplements in the form of tablets for the treatment of cancer, herbal supplements in the form of syrups for the treatment of headaches, etc.]
+
+homeopathic remedies [must be further specified by naming the (a) disease; OR (b) disease group, type of disease, disorder or condition to be treated; OR (c) specific type of medication; e.g. homeopathic remedies for the treatment of cancer, homeopathic remedies for the treatment of dental and oral diseases, etc.]
+
+meal replacements [indicate the specific type and/or the area of use, namely, protein powders for meal replacement for use as a dietary supplement, meal replacement bars for weight loss purposes, fruit-based meal replacement bars for treating vitamin b12 deficiency, vitamin preparations in the form of meal replacement drinks and powders, etc.]
+
+medicated confectionery [must be further specified by naming the (a) disease; OR (b) disease group, type of disease, disorder or condition to be treated; OR (c) specific type of medication; e.g. analgesic chewing gum, antacid lollipops, antibacterial chewing gum, medicated cold relief candy, motion sickness chewing gum, nicotine chewing gum for use as an aid to stop smoking, throat lozenges, weight loss lozenges, etc.]
+
+medicated skin care preparations [ must be further specified by naming the (a) disease; OR (b) disease group, type of disease, disorder or condition to be treated; OR (c) specific type of medication; e.g. niacinamide preparations for the treatment of acne, medicated creams and ointments for rosacea, etc.]
+
+medicated soaps [must be further specified by naming the (a) disease; OR (b) disease group, type of disease, disorder or condition to be treated; OR (c) specific type of medication; e.g. medicated soap for foot perspiration, medicated antiperspirant soap, medicated soap for the treatment of rosacea, etc.]
+
+nutraceuticals [must be further specified by naming the (a) disease; OR (b) disease group, type of disease, disorder or condition to be treated; OR (c) specific type of medication; e.g. meal replacement bars adapted for use as a dietary supplement, vitamin and mineral food supplements, herbal supplements for general health and well-being, omega-3 monoglycerides supplements, etc.]
+
+nutritional supplements [must be further specified by naming the (a) disease; OR (b) disease group, type of disease, disorder or condition to be treated; OR (c) specific type of medication; e.g. nutritional supplements as a sleep aid, nutritional supplements for prenatal and postnatal health and well-being, nutritional supplements for relief of pain, nutritional supplements to boost the immune system, protein powder nutritional supplements, nutritional supplements consisting primarily of zinc, nutritional supplements consisting primarily of calcium, nutritional supplement meal replacement bars containing vitamins and minerals, etc.]
+
+pharmaceutical preparations for the prevention and treatment of diseases and disorders of the metabolism [must be further specified by naming the (a) disease; OR (b) disease group, type of disease, disorder or condition to be treated; OR (c) specific type of medication; e.g. pharmaceutical preparations for the treatment of diabetes, hypoglycemia, gout, osteoarthritis, muscular dystrophy, and anemia.]
+
+pharmaceutical preparations [must be further specified by naming the (a) disease; OR (b) disease group, type of disease, disorder or condition to be treated; OR (c) specific type of medication; e.g. anti-inflammatory pharmaceutical preparations, pharmaceutical preparations for the prevention and treatment of cancer, pharmaceutical anti-allergic medications, etc.]
+
+sanitary preparations for medical purposes [indicate the specific type, namely, sterilizing preparations for baby bottles, disinfectants for sterilization, alcohol-based antibacterial skin sanitizer gels, surgical and medical dressings, disinfectants for medical apparatus and instruments, etc.]
+
+transdermal patches [indicate the specific disease or condition to be treated, namely, transdermal patches for use in the treatment of heart disease, transdermal patches for use in the treatment of high blood pressure, transdermal patches for use in the treatment of menopause, transdermal patches for use in the treatment of pain relief, transdermal pharmaceutical patches impregnated with insect repellent, etc.]
+
+vaccines [indicate the specific type, namely, veterinary vaccines, human vaccines, influenza vaccines, etc.]
+
+veterinary pharmaceutical preparations [must be further specified by naming the (a) disease; OR (b) disease group, type of disease, disorder or condition to be treated; OR (c) specific type of medication; e.g. veterinary pharmaceutical preparations for the treatment of parasites, veterinary pharmaceutical preparations for the treatment of infectious diseases in poultry, veterinary pharmaceutical preparations for periodontal diseases, etc.]
+
+Class 6
+
+containers of metal [indicate the specific type, namely, aluminium beverage containers sold empty, industrial packaging containers of metal, general purpose storage containers of metal, etc., OR indicate the specific area of use, namely, containers of metal for liquid fuel, metal containers for storage and transport, etc.]
+
+metal ducts [indicate the specific type, namely, air conditioning ducts, heating ducts of metal, etc., OR indicate the specific area of use, namely, ducts of metal for ventilating installations, metal ducts for gas pipelines, etc.]
+
+metal fittings [indicate the specific area of use, namely, metal fittings for windows, pipe fittings of metal, door fittings of metal, fittings of metal for furniture, joinery fittings of metal, etc.]
+
+metal materials for building and construction [indicate the specific type, namely, metal reinforcement materials for building, beams of common metal for building, building panels of metal, linings of metal for building, steel frames for building, etc., OR indicate the specific area of use, namely, materials of metal for scaffolds, materials of metal for railway construction, etc.]
+
+metal pipes [indicate the specific type, e.g. drain pipes of metal, metal water pipes, sewer pipes of metal, etc.]
+
+small metal hardware [indicate the specific type, namely, metal nails, spring locks of metal, anchor bolts of metal, lock bolts of metal, metal screws, washers of metal, etc.]
+
+transportable buildings of metal [indicate the specific type of building, namely, garden sheds of metal, transportable greenhouses of metal, portable mobile metal office buildings, etc.]
+
+wire [indicate the specific type, namely, brass wires, metal cable wire, welding wire, etc.]
+
+Class 7
+
+augers [indicate the specific type, namely, earth augers, power ice augers used in ice fishing, etc.]
+
+bellows [indicate the specific type, namely, machine bellows, etc.]
+
+blowers [indicate the specific type, namely, snow blowers, power blowers for lawn debris, etc.]
+
+cylinders [indicate the specific area of use, namely, cylinders for motors, cylinders for engines, cylinders for industrial machinery, printing cylinders, rolling mill cylinders, etc.]
+
+dust collectors [indicate the specific type, namely, woodworking dust collectors, silo dust collectors etc.]
+
+earth moving machines [indicate the specific type, namely, backhoes, bulldozers, front-end loaders, mechanical shovels, road rollers, scarifier machines, etc.]
+
+electric cleaning apparatus [indicate the specific apparatus, namely, electric window cleaning machines, carpet cleaning machines, dry-cleaning machines, floor cleaning machines, steam cleaning machines, wet-cleaning washing machines, electric vacuum cleaners, robotic vacuum cleaners, etc.]
+
+electric polishing apparatus [indicate the specific apparatus, namely, electric shoe polishers, floor polishing machines, glass polishing machines, leather polishing machines, rice polishing machines, etc.]
+
+engines [indicate the specific area of use, namely, airplane engines, diesel boat engines, steam engines, etc.]
+
+extruding equipment [indicate the specific area of use, namely, extruding machines for metals, machines for extruding plastics, wire extruding machines, etc.]
+
+generators [indicate the specific type, namely, AC generators, DC generators, high-voltage generators, etc., OR indicate the specific area of use, namely, generators for boats, generators for wind turbines, etc.]
+
+hoists [indicate the specific type, namely, electric hoists, pneumatic hoists, etc.]
+
+motors [indicate the specific area of use, namely, aeroplane motors, boat motors, elevator motors, marine motors, servo motors, etc.]
+
+parts of motors and engines [indicate the specific type, namely, electronic starters for engines, starters for motors and engines, mufflers for motors and engines, exhaust mufflers for motors and engines, cylinders for motors and engines, brushes being parts of motors, etc.]
+
+pulleys [indicate the specific type, namely, machine pulleys, drive pulleys, belt pulleys being parts of machines, idling pulleys being parts of machines, etc. The statement can be classified in various Nice classes depending on the further specification.]
+
+Class 8
+
+electric hand implements for personal grooming [indicate the specific type, namely, electric irons, electric beard clippers, electric hair clippers, electric razors, electric hand implements for tattooing, etc.]
+
+hand-operated pumps [indicate the specific type, namely, hand-operated desoldering pumps, hand-operated pumps for pumping well water, etc. The statement can be classified in various Nice classes depending on the further specification.]
+
+hand-operated tools [indicate the specific type, namely, hand-operated saws, hand-operated shears, hand-operated wrenches, hand-operated tools for shaving ice, hand-operated tools for bending pipes, hand-operated hand drills, hand-operated agricultural forks, etc.]
+
+knives [indicate the specific type, namely, bread knives, ceramic knives, fishing knives, fruit knives, folding knives, kitchen knives, pocket knives, serving knives, sport knives, table knives, etc. The statement can be classified in various Nice classes depending on the further specification.]
+
+non-electric hand implements for personal grooming [indicate the specific type, namely, non-electric beard clippers, non-electric curling irons, non-electric flat irons, non-electric razors, etc.]
+
+Contact us
+Departments and agencies
+Public service and military
+News
+Treaties, laws and regulations
+Government-wide reporting
+Prime Minister
+How government works
+Open government
+Powered by Norma

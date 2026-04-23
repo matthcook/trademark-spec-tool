@@ -18,3 +18,6 @@ build/
 backend/data/*.zip
 backend/data/*.csv
 backend/data/*.xml
+
+# Uploaded client documents — never commit these
+*.docx

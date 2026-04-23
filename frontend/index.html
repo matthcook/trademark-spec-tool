@@ -193,7 +193,7 @@
       font-size: 1rem;
       font-weight: 600;
       display: inline-block;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
     #amendment-panel .reason-tag {
       background: #fce8e6;
@@ -202,18 +202,8 @@
       padding: 3px 9px;
       border-radius: 20px;
       display: inline-block;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
-    #amendment-panel .coming-soon {
-      background: #f5f7fa;
-      border-radius: 8px;
-      padding: 20px;
-      text-align: center;
-      color: #888;
-      font-size: 0.85rem;
-      line-height: 1.6;
-    }
-    #amendment-panel .coming-soon strong { display: block; color: #555; margin-bottom: 6px; }
     #panel-close {
       position: absolute;
       top: 16px; right: 16px;
@@ -225,6 +215,112 @@
       padding: 4px 8px;
     }
     #panel-close:hover { color: #333; }
+
+    /* Amendment panel sections */
+    .panel-section { margin-bottom: 22px; }
+    .panel-section-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+
+    /* Loading spinner */
+    .panel-loading {
+      text-align: center;
+      padding: 30px 0;
+      color: #888;
+      font-size: 0.85rem;
+    }
+    .spinner {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 2px solid #e0e0e0;
+      border-top-color: #4a6fa5;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Suggestion cards */
+    .suggestion-card {
+      background: #f9fbff;
+      border: 1px solid #dde4f0;
+      border-radius: 7px;
+      padding: 11px 13px;
+      margin-bottom: 8px;
+    }
+    .suggestion-card .replacement {
+      font-family: Georgia, serif;
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+    .suggestion-card .rationale {
+      font-size: 0.78rem;
+      color: #555;
+      line-height: 1.45;
+      margin-bottom: 6px;
+    }
+    .suggestion-card .source-tag {
+      font-size: 0.68rem;
+      color: #4a6fa5;
+      background: #eef2fb;
+      padding: 2px 7px;
+      border-radius: 10px;
+      display: inline-block;
+      margin-right: 6px;
+    }
+    .copy-btn {
+      background: none;
+      border: 1px solid #c0ccdf;
+      border-radius: 5px;
+      font-size: 0.72rem;
+      color: #4a6fa5;
+      padding: 2px 9px;
+      cursor: pointer;
+      float: right;
+      transition: background 0.12s;
+    }
+    .copy-btn:hover { background: #eef2fb; }
+    .copy-btn.copied { color: #2e7d32; border-color: #a5d6a7; background: #e6f4ea; }
+
+    /* GSM match list */
+    .gsm-list { list-style: none; padding: 0; }
+    .gsm-list li {
+      font-size: 0.82rem;
+      font-family: Georgia, serif;
+      padding: 5px 9px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .gsm-list li:hover { background: #f0f4ff; }
+    .gsm-list li .gsm-term { flex: 1; }
+    .gsm-list li .gsm-copy {
+      font-size: 0.65rem;
+      color: #aaa;
+      flex-shrink: 0;
+    }
+    .gsm-list li:hover .gsm-copy { color: #4a6fa5; }
+
+    /* Error state */
+    .panel-error {
+      background: #fff5f5;
+      border: 1px solid #fecaca;
+      border-radius: 7px;
+      padding: 12px;
+      font-size: 0.82rem;
+      color: #c0392b;
+    }
 
     /* Phase progress */
     .phase-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -248,10 +344,7 @@
   <h3>Objected Term</h3>
   <div id="panel-term" class="term-display"></div><br>
   <span id="panel-reason" class="reason-tag"></span>
-  <div class="coming-soon">
-    <strong>Amendment options — Phase 4</strong>
-    Proposed replacements drawn from the CIPO pre-approved goods &amp; services list, examination manual, and accepted trademark database will appear here.
-  </div>
+  <div id="panel-body"></div>
 </div>
 
 <main>
@@ -321,7 +414,7 @@
       <div class="phase"><div class="lbl">Phase 1</div><div class="title">Project Setup</div><span class="pill done">Complete</span></div>
       <div class="phase"><div class="lbl">Phase 2</div><div class="title">Objection Parser</div><span class="pill done">Complete</span></div>
       <div class="phase"><div class="lbl">Phase 3</div><div class="title">CIPO Data Sources</div><span class="pill done">Complete</span></div>
-      <div class="phase"><div class="lbl">Phase 4</div><div class="title">Amendment Engine</div><span class="pill">Up next</span></div>
+      <div class="phase"><div class="lbl">Phase 4</div><div class="title">Amendment Engine</div><span class="pill done">Complete</span></div>
     </div>
   </div>
 
@@ -412,7 +505,7 @@
           <span class="class-type">${esc(cls.goods_or_services)}</span>
           ${totalOccurrences > 0 ? `<span class="objection-count">${totalOccurrences} objection${totalOccurrences !== 1 ? "s" : ""}</span>` : ""}
         </div>
-        <div class="spec-text">${buildMarkedText(cls.marked_text || "", cls.objected_terms || [])}</div>
+        <div class="spec-text">${buildMarkedText(cls.marked_text || "", cls.objected_terms || [], cls.nice_class)}</div>
       `;
       doc.appendChild(block);
     }
@@ -425,6 +518,7 @@
         document.getElementById("panel-term").textContent   = el.dataset.term;
         document.getElementById("panel-reason").textContent = el.dataset.reason;
         panel.style.display = "block";
+        loadAmendments(el.dataset.term, el.dataset.niceClass, el.dataset.reason);
       });
     });
 
@@ -433,16 +527,14 @@
   }
 
   // Replace {{term}} markers with highlighted spans
-  function buildMarkedText(markedText, objectedTerms) {
-    // Build a reason lookup
+  function buildMarkedText(markedText, objectedTerms, niceClass) {
     const reasons = {};
     for (const t of objectedTerms) reasons[t.term.toLowerCase()] = t.reason || "objected by examiner";
 
     let html = esc(markedText);
-    // Replace escaped markers {{term}} → <span>
     html = html.replace(/\{\{([^}]+)\}\}/g, (_, term) => {
       const reason = reasons[term.toLowerCase()] || "objected by examiner";
-      return `<span class="objected-term" data-term="${esc(term)}" data-reason="${esc(reason)}">${esc(term)}</span>`;
+      return `<span class="objected-term" data-term="${esc(term)}" data-reason="${esc(reason)}" data-nice-class="${esc(niceClass || "")}">${esc(term)}</span>`;
     });
     return html;
   }
@@ -454,6 +546,98 @@
 
   function esc(s) {
     return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  // ── Amendment engine ──────────────────────────────────────────────────────────
+
+  async function loadAmendments(term, niceClass, reason) {
+    const body = document.getElementById("panel-body");
+    body.innerHTML = `
+      <div class="panel-loading">
+        <div class="spinner"></div><br>
+        Searching G&amp;S Manual and generating suggestions…
+      </div>`;
+
+    try {
+      const res = await fetch("/api/suggest-amendments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ term, nice_class: niceClass, reason }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      renderAmendments(body, data);
+    } catch (e) {
+      body.innerHTML = `<div class="panel-error">Could not load suggestions: ${esc(String(e))}</div>`;
+    }
+  }
+
+  function renderAmendments(container, data) {
+    let html = "";
+
+    // AI suggestions
+    if (data.suggestions && data.suggestions.length > 0) {
+      html += `<div class="panel-section">
+        <div class="panel-section-label">Proposed replacements</div>`;
+      for (const s of data.suggestions) {
+        html += `
+        <div class="suggestion-card">
+          <button class="copy-btn" onclick="copyTerm(this, ${JSON.stringify(esc(s.replacement))})">Copy</button>
+          <div class="replacement">${esc(s.replacement)}</div>
+          <div class="rationale">${esc(s.rationale)}</div>
+          <span class="source-tag">${esc(s.source)}</span>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
+    // GSM matches
+    if (data.gsm_matches && data.gsm_matches.length > 0) {
+      html += `<div class="panel-section">
+        <div class="panel-section-label">Pre-approved G&amp;S Manual matches</div>
+        <ul class="gsm-list">`;
+      for (const m of data.gsm_matches.slice(0, 12)) {
+        html += `<li onclick="copyTerm(null, ${JSON.stringify(esc(m.term))}, true)">
+          <span class="gsm-term">${esc(m.term)}</span>
+          <span class="gsm-copy">click to copy</span>
+        </li>`;
+      }
+      html += `</ul></div>`;
+    }
+
+    // Specificity guidance
+    if (data.specificity_guidance && data.specificity_guidance.length > 0) {
+      html += `<div class="panel-section">
+        <div class="panel-section-label">Specificity guidance</div>`;
+      for (const g of data.specificity_guidance.slice(0, 3)) {
+        html += `<div style="font-size:0.8rem;color:#555;margin-bottom:8px;line-height:1.45;">
+          <strong style="color:#1a1a2e">${esc(g.term)}</strong>: ${esc(g.guidance)}
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
+    if (!html) {
+      html = `<div style="font-size:0.83rem;color:#888;padding:12px 0">No suggestions found for this term.</div>`;
+    }
+
+    container.innerHTML = html;
+  }
+
+  function copyTerm(btn, text, flash) {
+    // unescape HTML entities before copying
+    const d = document.createElement("textarea");
+    d.innerHTML = text;
+    navigator.clipboard.writeText(d.value).catch(() => {});
+    if (btn) {
+      btn.textContent = "Copied!";
+      btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1800);
+    } else if (flash) {
+      // briefly highlight the clicked GSM row
+      const active = document.activeElement;
+      if (active) active.blur();
+    }
   }
 </script>
 </body>
