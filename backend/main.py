@@ -1,4 +1,5 @@
 import os
+import re
 import tempfile
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -178,6 +179,34 @@ class AmendmentRequest(BaseModel):
     business_context: str = ""   # pre-loaded from /api/research-context
 
 
+def _gsm_keywords(term: str) -> list[str]:
+    """
+    For complex multi-word phrases, extract multiple search keywords so GSM
+    search returns useful results even when the full phrase has no exact match.
+    E.g. "computer software for monitoring vehicle fleets" → also search
+    "computer software", "computer", "vehicle", "fleet".
+    """
+    keywords = [term]
+    words = term.strip().lower().split()
+    if len(words) <= 2:
+        return keywords
+    # Take the noun phrase before the first purpose/use preposition
+    head = re.split(r'\s+(?:for|used|to|of|including|relating|related|in|and)\b', term.lower(), maxsplit=1)[0].strip()
+    if head and head != term.lower():
+        keywords.append(head)
+    # Always add first word and first two words as broad fallbacks
+    keywords.append(words[0])
+    if len(words) >= 3:
+        keywords.append(" ".join(words[:2]))
+    # Pick out any content words from the tail (after "for"/"in" etc.)
+    stopwords = {"for","used","use","using","to","of","in","and","or","the",
+                 "a","an","with","by","from","including","relating","related"}
+    tail_words = [w for w in words if w not in stopwords and w not in keywords]
+    if tail_words:
+        keywords.append(tail_words[0])
+    return list(dict.fromkeys(k for k in keywords if k))  # dedup, preserve order
+
+
 @app.post("/api/suggest-amendments")
 async def suggest_amendments(body: AmendmentRequest):
     """Return amendment options with citations for an objected term."""
@@ -186,8 +215,29 @@ async def suggest_amendments(body: AmendmentRequest):
 
     import asyncio
 
-    gsm = search_gsm(body.term, body.nice_class or None)
-    sg  = search_specificity(body.term, body.nice_class or None)
+    # Multi-keyword GSM search so complex phrases still get useful matches
+    seen: set = set()
+    all_gsm: list = []
+    for kw in _gsm_keywords(body.term):
+        for row in search_gsm(kw, body.nice_class or None):
+            key = (row["term"].lower(), row.get("nice_class", ""))
+            if key not in seen:
+                seen.add(key)
+                all_gsm.append(row)
+        if len(all_gsm) >= 500:
+            break
+    gsm = all_gsm[:500]
+
+    # Same multi-keyword approach for specificity guidelines
+    sg_seen: set = set()
+    all_sg: list = []
+    for kw in _gsm_keywords(body.term)[:3]:   # top 3 keywords is enough
+        for row in search_specificity(kw, body.nice_class or None):
+            key = row["term"].lower()
+            if key not in sg_seen:
+                sg_seen.add(key)
+                all_sg.append(row)
+    sg = all_sg[:20]
 
     try:
         suggestions = await asyncio.to_thread(

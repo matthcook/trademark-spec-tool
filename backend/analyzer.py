@@ -110,6 +110,19 @@ def generate_amendment_suggestions(
         else "Tier 1 = most specific and likely to satisfy the examiner. Tier 2 = alternatives."
     )
 
+    # Adapt instructions for single words vs. complex multi-word phrases
+    is_complex = len(term.strip().split()) > 3
+    if is_complex:
+        specificity_rule = (
+            f'"{term}" is a multi-word phrase. Replacements must describe the same category of goods/services '
+            f'but replace the vague or overbroad portions with specific, concrete language. '
+            f'The replacement does not need to use the same words — it should describe the specific type of '
+            f'product/service in plain commercial terms (e.g. "downloadable software for fleet vehicle tracking" '
+            f'rather than "software for monitoring and analyzing vehicle data").'
+        )
+    else:
+        specificity_rule = f'Each replacement must be more specific than "{term}".'
+
     prompt = f"""You are a Canadian trademark agent advising on a CIPO office action response.
 
 Objected term: "{term}" (Class {nice_class})
@@ -121,7 +134,7 @@ Rules:
 1. STRONGLY prefer terms from the pre-approved list — these are accepted by CIPO without further objection
 2. Copy every recommended pre-approved term EXACTLY as written — do not paraphrase or shorten
 3. Read the full list before deciding — do not stop at the first plausible matches
-4. Each replacement must be more specific than "{term}"
+4. {specificity_rule}
 5. Include a range of specificity levels: some narrowly tailored to the applicant's exact use, some broader pre-approved options that still satisfy the examiner
 6. {tier_note}
 7. Only construct a new term if no pre-approved option adequately fits — label source "Constructed per specificity guidelines"
@@ -159,6 +172,17 @@ def analyze_office_action(parsed_doc, cipo_app=None) -> dict:
         p["tagged"] for p in parsed_doc.paragraphs_with_formatting
     )
 
+    # If we have the full CIPO spec, include it so Claude can fill gaps
+    cipo_spec_block = ""
+    if cipo_app and cipo_app.specification:
+        cipo_spec_block = f"""
+The complete goods and services specification currently on file at CIPO for this application is:
+
+{cipo_app.specification}
+
+IMPORTANT: Office actions sometimes only reproduce the objected classes or truncate the specification. Use the CIPO record above to reconstruct the COMPLETE specification text for every class, including classes that may not appear in the office action body. The marked_text for each class must reflect the full CIPO specification text, not just what the examiner quoted.
+"""
+
     prompt = f"""You are analyzing a Canadian CIPO trademark examiner's office action.
 
 The document uses special tags to indicate text formatting:
@@ -169,7 +193,7 @@ The document uses special tags to indicate text formatting:
 Here is the full office action with formatting tags:
 
 {tagged_paragraphs}
-
+{cipo_spec_block}
 Your task is to extract structured information and return a JSON object with exactly this structure:
 
 {{
@@ -196,15 +220,16 @@ Your task is to extract structured information and return a JSON object with exa
 
 Critical rules:
 - In marked_text, wrap EVERY occurrence of EVERY objected term in {{{{ }}}} markers — do not skip any occurrence
-- Include ALL classes from the specification, even those with no objected terms (objected_terms will be an empty array)
-- Reconstruct the complete specification text for each class — do not truncate
+- Include ALL classes from the full specification, even those with no objected terms (objected_terms will be an empty array)
+- Use the complete CIPO specification text for each class — do not truncate or paraphrase
 - Remove the [BOLD][09][/BOLD] class number prefix from marked_text — start with the goods/services text itself
+- Objected terms may be single words OR multi-word phrases — wrap the entire objected phrase in {{{{ }}}}
 - Return only valid JSON with no additional text
 """
 
     message = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=3000,
+        max_tokens=4000,
         messages=[{"role": "user", "content": prompt}],
     )
 
