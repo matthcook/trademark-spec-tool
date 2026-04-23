@@ -36,11 +36,19 @@ def _extract_re_table(doc) -> dict:
     return result
 
 
-def _extract_application_number(paragraphs: list[dict]) -> Optional[str]:
+def _extract_application_number(paragraphs: list[dict], tables=None) -> Optional[str]:
+    """Find a 7-digit CIPO application number in paragraphs and table cells."""
     for p in paragraphs:
         matches = re.findall(r'\b(\d{7})\b', p["text"])
         if matches:
             return matches[0]
+    if tables:
+        for table in tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    matches = re.findall(r'\b(\d{7})\b', cell.text)
+                    if matches:
+                        return matches[0]
     return None
 
 
@@ -78,7 +86,7 @@ def parse_office_action(file_path: str) -> ParsedOfficeAction:
     re_fields = _extract_re_table(doc)
 
     return ParsedOfficeAction(
-        application_number=_extract_application_number(paragraphs_with_formatting),
+        application_number=_extract_application_number(paragraphs_with_formatting, doc.tables),
         trademark_name=re_fields["trademark_name"],
         applicant_name=re_fields["applicant_name"],
         formatting_convention=None,

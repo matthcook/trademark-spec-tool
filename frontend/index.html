@@ -562,6 +562,7 @@
       <div id="deadlineBanner" class="deadline-banner" style="display:none">
         ⚠ <strong>Response deadline:</strong> <span id="deadlineDate"></span>
       </div>
+      <div id="cipoBanner" style="display:none;border-left:4px solid;border-radius:0 6px 6px 0;padding:8px 14px;font-size:0.83rem;margin-bottom:14px"></div>
 
       <div class="meta-row">
         <div class="meta-item">
@@ -904,6 +905,24 @@
     document.getElementById("metaApplicant").textContent = a.applicant_name || "—";
     document.getElementById("conventionText").textContent = a.formatting_convention || "—";
 
+    // Show CIPO fetch status so the user knows whether the full spec was loaded
+    const cipoBanner = document.getElementById("cipoBanner");
+    if (data.cipo_spec_loaded) {
+      cipoBanner.style.display = "block";
+      cipoBanner.style.background = "#e6f4ea";
+      cipoBanner.style.borderLeftColor = "#2e7d32";
+      cipoBanner.style.color = "#1b5e20";
+      cipoBanner.innerHTML = `✓ Full specification loaded from CIPO database`;
+    } else if (data.cipo_fetch_error) {
+      cipoBanner.style.display = "block";
+      cipoBanner.style.background = "#fff8e1";
+      cipoBanner.style.borderLeftColor = "#f59e0b";
+      cipoBanner.style.color = "#7c5800";
+      cipoBanner.innerHTML = `⚠ Specification may be incomplete: ${esc(data.cipo_fetch_error)}`;
+    } else {
+      cipoBanner.style.display = "none";
+    }
+
     if (a.response_deadline) {
       document.getElementById("deadlineDate").textContent = a.response_deadline;
       document.getElementById("deadlineBanner").style.display = "block";
@@ -1046,7 +1065,12 @@
     let html = "";
 
     // Section 1 — AI-selected recommendations
-    if (approved.length > 0 || constructed.length > 0) {
+    if (data.suggestion_error) {
+      html += `<div style="font-size:0.78rem;color:#c0392b;background:#fff5f5;border:1px solid #fecaca;border-radius:6px;padding:9px 11px;margin-bottom:12px">
+        <strong>Suggestions failed:</strong> ${esc(data.suggestion_error)}<br>
+        <span style="color:#888">Use the browse panel below to find replacements manually.</span>
+      </div>`;
+    } else if (approved.length > 0 || constructed.length > 0) {
       const allRec = [...approved, ...constructed];
       html += `
         <details class="sugg-group" open>
@@ -1064,7 +1088,7 @@
           </div>
         </details>`;
     } else {
-      html += `<div style="font-size:0.83rem;color:#888;padding:8px 0 12px">No AI recommendations found for this term.</div>`;
+      html += `<div style="font-size:0.83rem;color:#888;padding:8px 0 12px">No AI recommendations found — use the browse panel below.</div>`;
     }
 
     // Section 2 — Live searchable list of ALL pre-approved terms

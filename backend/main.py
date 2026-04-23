@@ -93,11 +93,15 @@ async def parse_objection(file: UploadFile = File(...)):
         # Step 2: Fetch CIPO application data if we found an application number
         cipo_app = None
         cipo_error = None
+        cipo_spec_loaded = False
         if parsed.application_number:
             try:
                 cipo_app = fetch_application(parsed.application_number)
+                cipo_spec_loaded = bool(cipo_app and cipo_app.specification)
             except Exception as e:
                 cipo_error = str(e)
+        else:
+            cipo_error = "Application number not found in document — could not fetch full specification from CIPO"
 
         # Step 3: Analyze with Claude
         analysis = analyze_office_action(parsed, cipo_app)
@@ -111,6 +115,7 @@ async def parse_objection(file: UploadFile = File(...)):
         return {
             "analysis": analysis,
             "cipo_fetch_error": cipo_error,
+            "cipo_spec_loaded": cipo_spec_loaded,
         }
 
     finally:
@@ -228,10 +233,18 @@ async def suggest_amendments(body: AmendmentRequest):
             break
     gsm = all_gsm[:500]
 
+    # Cap what goes to the AI prompt — the browse panel fetches live anyway,
+    # so there's no reason to send 500 rows into a giant Claude prompt.
+    # Prefer same-class terms, pad with cross-class up to the cap.
+    nice_cls = body.nice_class.zfill(2) if body.nice_class else ""
+    gsm_same  = [r for r in gsm if r.get("nice_class","").zfill(2) == nice_cls]
+    gsm_cross = [r for r in gsm if r not in gsm_same]
+    gsm_for_ai = (gsm_same[:140] + gsm_cross[:10])[:150]
+
     # Same multi-keyword approach for specificity guidelines
     sg_seen: set = set()
     all_sg: list = []
-    for kw in _gsm_keywords(body.term)[:3]:   # top 3 keywords is enough
+    for kw in _gsm_keywords(body.term)[:3]:
         for row in search_specificity(kw, body.nice_class or None):
             key = row["term"].lower()
             if key not in sg_seen:
@@ -239,14 +252,16 @@ async def suggest_amendments(body: AmendmentRequest):
                 all_sg.append(row)
     sg = all_sg[:20]
 
+    suggestion_error = None
     try:
         suggestions = await asyncio.to_thread(
             generate_amendment_suggestions,
-            body.term, body.nice_class, body.reason, gsm, sg,
+            body.term, body.nice_class, body.reason, gsm_for_ai, sg,
             body.business_context,
         )
-    except Exception:
+    except Exception as exc:
         suggestions = []
+        suggestion_error = str(exc)
 
     return {
         "term": body.term,
@@ -254,6 +269,7 @@ async def suggest_amendments(body: AmendmentRequest):
         "gsm_matches": gsm,
         "specificity_guidance": sg,
         "suggestions": suggestions,
+        "suggestion_error": suggestion_error,
     }
 
 
