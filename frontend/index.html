@@ -282,7 +282,7 @@
       display: none;
       position: fixed;
       right: 0; top: 0; bottom: 0;
-      width: 380px;
+      width: 440px;
       background: white;
       box-shadow: -4px 0 24px rgba(0,0,0,0.12);
       z-index: 100;
@@ -456,6 +456,68 @@
       letter-spacing: 0.07em;
       color: #aaa;
       margin-bottom: 8px;
+    }
+
+    /* ── GSM live search ──────────────────────────────────────────────────────── */
+    .gsm-search-input {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid #d0d7e2;
+      border-radius: 6px;
+      font-size: 0.84rem;
+      font-family: -apple-system, sans-serif;
+      outline: none;
+      margin-bottom: 6px;
+    }
+    .gsm-search-input:focus { border-color: #4a6fa5; box-shadow: 0 0 0 2px rgba(74,111,165,0.12); }
+    .gsm-results-container {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #e8ecf2;
+      border-radius: 5px;
+    }
+    .gsm-list-item {
+      display: flex;
+      align-items: center;
+      padding: 5px 8px;
+      border-bottom: 1px solid #f0f4f8;
+      gap: 5px;
+    }
+    .gsm-list-item:last-child { border-bottom: none; }
+    .gsm-list-item:hover { background: #f4f7ff; }
+    .gsm-term-text {
+      flex: 1;
+      font-family: Georgia, serif;
+      font-size: 0.81rem;
+      color: #1a1a2e;
+      min-width: 0;
+      word-break: break-word;
+    }
+    .gsm-class-badge {
+      font-size: 0.63rem;
+      background: #e8ecf5;
+      color: #4a6fa5;
+      padding: 1px 5px;
+      border-radius: 8px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .gsm-item-actions { display: flex; gap: 3px; flex-shrink: 0; }
+    .gsm-item-actions .use-btn  { padding: 2px 6px; font-size: 0.67rem; }
+    .gsm-item-actions .copy-btn { padding: 2px 6px; font-size: 0.67rem; }
+    .gsm-status {
+      padding: 12px 8px;
+      font-size: 0.78rem;
+      color: #999;
+      text-align: center;
+    }
+    .gsm-more {
+      padding: 7px 8px;
+      font-size: 0.73rem;
+      color: #aaa;
+      text-align: center;
+      border-top: 1px solid #f0f4f8;
+      font-style: italic;
     }
   </style>
 </head>
@@ -967,8 +1029,8 @@
 
   function renderAmendments(container, data) {
     const suggs = data.suggestions || [];
-    const approved   = suggs.filter(s => s.source && !s.source.toLowerCase().includes("constructed"));
-    const constructed = suggs.filter(s => s.source && s.source.toLowerCase().includes("constructed"));
+    const approved    = suggs.filter(s => s.source && !s.source.toLowerCase().includes("constructed"));
+    const constructed = suggs.filter(s => s.source &&  s.source.toLowerCase().includes("constructed"));
 
     const renderCards = items => items.map(s => `
       <div class="suggestion-card">
@@ -983,47 +1045,135 @@
 
     let html = "";
 
-    if (approved.length > 0) {
+    // Section 1 — AI-selected recommendations
+    if (approved.length > 0 || constructed.length > 0) {
+      const allRec = [...approved, ...constructed];
       html += `
         <details class="sugg-group" open>
           <summary class="sugg-group-header">
             <span class="sugg-group-arrow">▶</span>
-            CIPO Pre-Approved G&amp;S Manual
-            <span class="sugg-count">${approved.length}</span>
+            Recommended replacements
+            <span class="sugg-count">${allRec.length}</span>
           </summary>
-          <div class="sugg-group-body">${renderCards(approved)}</div>
+          <div class="sugg-group-body">
+            <div style="font-size:0.72rem;color:#999;margin-bottom:8px">
+              AI-selected from CIPO pre-approved list based on applicant's use
+            </div>
+            ${renderCards(approved)}
+            ${constructed.length ? `<div style="font-size:0.68rem;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px">Constructed per specificity guidelines</div>${renderCards(constructed)}` : ""}
+          </div>
         </details>`;
+    } else {
+      html += `<div style="font-size:0.83rem;color:#888;padding:8px 0 12px">No AI recommendations found for this term.</div>`;
     }
 
-    if (constructed.length > 0) {
-      html += `
-        <details class="sugg-group">
-          <summary class="sugg-group-header">
-            <span class="sugg-group-arrow">▶</span>
-            Constructed per specificity guidelines
-            <span class="sugg-count">${constructed.length}</span>
-          </summary>
-          <div class="sugg-group-body">${renderCards(constructed)}</div>
-        </details>`;
-    }
+    // Section 2 — Live searchable list of ALL pre-approved terms
+    html += `
+      <details class="sugg-group" open>
+        <summary class="sugg-group-header">
+          <span class="sugg-group-arrow">▶</span>
+          Browse all pre-approved G&amp;S terms
+          <span class="sugg-count" id="gsm-count-badge"></span>
+        </summary>
+        <div class="sugg-group-body">
+          <input type="text" id="gsm-search-input" class="gsm-search-input"
+                 placeholder="Search 81,000+ pre-approved terms…"
+                 value="${esc(data.term || "")}">
+          <div id="gsm-results-container" class="gsm-results-container">
+            <div class="gsm-status">Loading…</div>
+          </div>
+        </div>
+      </details>`;
 
-    if (!approved.length && !constructed.length) {
-      html = `<div style="font-size:0.83rem;color:#888;padding:12px 0">No suggestions found for this term.</div>`;
-    }
-
-    // Specificity guidance
+    // Section 3 — Specificity guidance
     if (data.specificity_guidance && data.specificity_guidance.length > 0) {
-      html += `<div class="panel-section" style="margin-top:4px">
-        <div class="panel-section-label">Specificity guidance</div>`;
+      html += `<details class="sugg-group">
+        <summary class="sugg-group-header">
+          <span class="sugg-group-arrow">▶</span>
+          Specificity guidance
+          <span class="sugg-count">${Math.min(data.specificity_guidance.length, 4)}</span>
+        </summary>
+        <div class="sugg-group-body">`;
       for (const g of data.specificity_guidance.slice(0, 4)) {
-        html += `<div style="font-size:0.79rem;color:#555;margin-bottom:8px;line-height:1.45;">
+        html += `<div style="font-size:0.79rem;color:#555;margin-bottom:10px;line-height:1.45;">
           <strong style="color:#1a1a2e">${esc(g.term)}</strong>: ${esc(g.guidance)}
         </div>`;
       }
-      html += `</div>`;
+      html += `</div></details>`;
     }
 
     container.innerHTML = html;
+
+    // Kick off the initial GSM search (pre-filled with the objected term)
+    initGsmSearch(data.term || "");
+  }
+
+  // ── Live GSM search ───────────────────────────────────────────────────────────
+
+  function initGsmSearch(initialTerm) {
+    const input = document.getElementById("gsm-search-input");
+    if (!input) return;
+    let timer = null;
+    input.addEventListener("input", () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => runGsmSearch(input.value.trim()), 350);
+    });
+    // Focus the search box so the user can immediately start typing
+    setTimeout(() => input.focus(), 50);
+    runGsmSearch(initialTerm);
+  }
+
+  async function runGsmSearch(term) {
+    const container = document.getElementById("gsm-results-container");
+    const badge     = document.getElementById("gsm-count-badge");
+    if (!container) return;
+
+    if (!term.trim()) {
+      container.innerHTML = `<div class="gsm-status">Type to search all 81,000+ pre-approved terms</div>`;
+      if (badge) badge.textContent = "";
+      return;
+    }
+
+    container.innerHTML = `<div class="gsm-status">Searching…</div>`;
+
+    try {
+      const params = new URLSearchParams({ term });
+      if (panelState.niceClass) params.set("nice_class", panelState.niceClass);
+      const res = await fetch(`/api/resources/search-gsm?${params}`);
+      if (!res.ok) throw new Error("Search failed");
+      const data = await res.json();
+      const results = data.results || [];
+
+      if (badge) badge.textContent = results.length >= 500 ? "500+" : String(results.length);
+
+      if (results.length === 0) {
+        container.innerHTML = `<div class="gsm-status">No pre-approved terms match "${esc(term)}"</div>`;
+        return;
+      }
+
+      const shown = results.slice(0, 300);
+      const curCls = String(parseInt(panelState.niceClass || "0"));
+      let html = shown.map(m => {
+        const cls = String(parseInt(m.nice_class || "0"));
+        const clsBadge = cls !== curCls ? `<span class="gsm-class-badge">Cl.${cls}</span>` : "";
+        return `<div class="gsm-list-item">
+          <span class="gsm-term-text">${esc(m.term)}</span>
+          ${clsBadge}
+          <div class="gsm-item-actions">
+            <button class="use-btn" data-replacement="${esc(m.term)}">Use</button>
+            <button class="copy-btn" onclick="copyTerm(this, ${JSON.stringify(esc(m.term))})">Copy</button>
+          </div>
+        </div>`;
+      }).join("");
+
+      if (results.length > 300) {
+        html += `<div class="gsm-more">Showing 300 of ${results.length}+ results — refine search to see more</div>`;
+      }
+
+      container.innerHTML = html;
+    } catch(e) {
+      container.innerHTML = `<div class="gsm-status">Search error — try again</div>`;
+    }
   }
 
   function copyTerm(btn, text) {
