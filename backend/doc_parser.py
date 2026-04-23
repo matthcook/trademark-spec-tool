@@ -22,51 +22,110 @@ class ParsedOfficeAction:
     paragraphs_with_formatting: list[dict]
 
 
-def _all_text_chunks(paragraphs: list[dict], tables) -> list[str]:
-    """Yield every text chunk visible in the document (paragraphs + table cells)."""
+def _iter_header_chunks(doc) -> list[str]:
+    """Extract text from all page header sections (not in doc.paragraphs/doc.tables)."""
+    chunks = []
+    try:
+        for section in doc.sections:
+            for hdr in [section.header, section.first_page_header]:
+                if hdr is None:
+                    continue
+                for para in hdr.paragraphs:
+                    if para.text.strip():
+                        chunks.append(para.text.strip())
+                for tbl in hdr.tables:
+                    for row in tbl.rows:
+                        cells = [c.text.strip() for c in row.cells]
+                        chunks.extend(c for c in cells if c)
+                        for i in range(len(cells) - 1):
+                            if cells[i] and cells[i + 1]:
+                                chunks.append(f"{cells[i]}: {cells[i + 1]}")
+    except Exception:
+        pass
+    return chunks
+
+
+def _iter_textbox_chunks(doc) -> list[str]:
+    """Extract text from text boxes (w:txbxContent elements), which are invisible to doc.paragraphs."""
+    chunks = []
+    try:
+        W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+        for txbx in doc.element.body.iter(f"{{{W}}}txbxContent"):
+            for p in txbx.iter(f"{{{W}}}p"):
+                text = "".join(t.text or "" for t in p.iter(f"{{{W}}}t")).strip()
+                if text:
+                    chunks.append(text)
+    except Exception:
+        pass
+    return chunks
+
+
+def _all_text_chunks(paragraphs: list[dict], doc) -> list[str]:
+    """Collect every visible text chunk: body paragraphs, body tables, headers, text boxes."""
     chunks = [p["text"] for p in paragraphs if p["text"].strip()]
-    if tables:
-        for table in tables:
-            for row in table.rows:
-                cells = [c.text.strip() for c in row.cells]
-                # Add each cell individually
-                chunks.extend(c for c in cells if c)
-                # Also add adjacent-cell pairs as "label: value" so a label in
-                # one cell and a number in the next cell get matched together.
-                for i in range(len(cells) - 1):
-                    if cells[i] and cells[i + 1]:
-                        chunks.append(f"{cells[i]}: {cells[i + 1]}")
+
+    for table in doc.tables:
+        for row in table.rows:
+            cells = [c.text.strip() for c in row.cells]
+            chunks.extend(c for c in cells if c)
+            for i in range(len(cells) - 1):
+                if cells[i] and cells[i + 1]:
+                    chunks.append(f"{cells[i]}: {cells[i + 1]}")
+
+    chunks.extend(_iter_header_chunks(doc))
+    chunks.extend(_iter_textbox_chunks(doc))
     return chunks
 
 
 def _clean_num(s: str) -> Optional[str]:
-    n = re.sub(r"[\s,]", "", s)
+    n = re.sub(r"[\s,\xa0]", "", s)   # also strip non-breaking spaces
     return n if re.fullmatch(r"\d{7,8}", n) else None
 
 
-def _extract_numbers(paragraphs: list[dict], tables) -> tuple[Optional[str], Optional[str]]:
+def _find_formatted_numbers(text: str) -> list[str]:
+    """
+    Find all 7-8 digit numbers, including ones formatted with spaces/commas
+    as thousand separators (e.g. "2 236 993" or "2,236,993").
+    """
+    results = []
+    for m in re.finditer(r"(?<!\d)([\d][\d,\s\xa0]{4,9}[\d])(?!\d)", text):
+        cleaned = _clean_num(m.group(1))
+        if cleaned:
+            results.append(cleaned)
+    return results
+
+
+def _extract_numbers(paragraphs: list[dict], doc) -> tuple[Optional[str], Optional[str]]:
     """
     Return (cipo_app_number, ir_number).
 
-    CIPO app number heuristics (in priority order):
-      1. Value after a label containing "Our File", "Our Ref", "Notre dossier"
-      2. Any 7-digit number starting with 2 (current CIPO app numbers are ~2,000,000–2,200,000)
-      3. IR number used as fallback (can also be used to query CIPO)
+    Searches body paragraphs, body tables, page headers, and text boxes.
 
-    IR number: value after a label containing "IR No", "IR Number",
-    "International Registration".
+    CIPO app number heuristics (in priority order):
+      1. Value after a label: "Our File", "Our Ref", "Notre dossier", "File No.", etc.
+      2. Any 7-digit number starting with 2 (CIPO app numbers ~2,000,000–2,200,000)
+         — handles plain "2236993" and space-formatted "2 236 993"
+      3. Any 7-8 digit number as last resort
+
+    IR number: value after "IR No", "IR Number", "International Registration", etc.
     """
-    chunks = _all_text_chunks(paragraphs, tables)
+    chunks = _all_text_chunks(paragraphs, doc)
 
     our_file_re = re.compile(
-        r"(?:Our\s+(?:File|Ref(?:erence)?)|Notre\s+(?:dossier|r[ée]f(?:[ée]rence)?))"
-        r"[^0-9]{0,20}?([\d][\d,\s]{4,9}[\d])",
+        r"(?:"
+        r"Our\s+(?:File|Ref(?:erence)?)"
+        r"|Notre\s+(?:dossier|r[ée]f(?:[ée]rence)?)"
+        r"|No\.?\s*de\s+(?:dossier|r[ée]f(?:[ée]rence)?)"
+        r"|File\s+No\.?"
+        r"|Ref(?:erence)?\s*No\.?"
+        r")"
+        r"[^0-9]{0,30}?([\d][\d,\s\xa0]{4,9}[\d])",
         re.IGNORECASE,
     )
     ir_re = re.compile(
         r"(?:IR\s+(?:No\.?|Number|Num\.?)|"
         r"Int(?:ernational)?\s+Reg(?:istration)?\.?\s*(?:No\.?|Number)?)"
-        r"[^0-9]{0,20}?([\d][\d,\s]{4,9}[\d])",
+        r"[^0-9]{0,20}?([\d][\d,\s\xa0]{4,9}[\d])",
         re.IGNORECASE,
     )
 
@@ -79,31 +138,27 @@ def _extract_numbers(paragraphs: list[dict], tables) -> tuple[Optional[str], Opt
             m = our_file_re.search(text)
             if m:
                 app_number = _clean_num(m.group(1))
-
         if not ir_number:
             m = ir_re.search(text)
             if m:
                 ir_number = _clean_num(m.group(1))
-
         if app_number and ir_number:
             break
 
-    # Pass 2 — any 7-digit number starting with 2 (CIPO app numbers ~2xxxxxx)
+    # Pass 2 — any 7-digit number starting with 2 (handles spaced format too)
     if not app_number:
         for text in chunks:
-            for m in re.finditer(r"\b(2\d{6})\b", text):
-                candidate = m.group(1)
-                if candidate != ir_number:   # don't re-use the IR number
+            for candidate in _find_formatted_numbers(text):
+                if re.fullmatch(r"2\d{6}", candidate) and candidate != ir_number:
                     app_number = candidate
                     break
             if app_number:
                 break
 
-    # Pass 3 — if still nothing, fall back to any 7-digit number
+    # Pass 3 — any 7-8 digit number
     if not app_number:
         for text in chunks:
-            for m in re.finditer(r"\b(\d{7})\b", text):
-                candidate = m.group(1)
+            for candidate in _find_formatted_numbers(text):
                 if candidate != ir_number:
                     app_number = candidate
                     break
@@ -114,8 +169,10 @@ def _extract_numbers(paragraphs: list[dict], tables) -> tuple[Optional[str], Opt
 
 
 def _extract_re_table(doc) -> dict:
-    """Extract trademark name and applicant from the RE: header table."""
+    """Extract trademark name and applicant from the RE: header table or RE: paragraph."""
     result = {"trademark_name": None, "applicant_name": None}
+
+    # Try table-based extraction first
     for table in doc.tables:
         cells = [cell.text.strip() for row in table.rows for cell in row.cells if cell.text.strip()]
         if any(c in ("RE:", "Re:", "Trademark:", "Applicant:") for c in cells):
@@ -124,18 +181,42 @@ def _extract_re_table(doc) -> dict:
                     result["trademark_name"] = cells[i + 1].replace("\n", " ").strip()
                 if cell in ("Applicant:", "Demandeur:") and i + 1 < len(cells):
                     result["applicant_name"] = cells[i + 1].replace("\n", " ").strip()
+
+    # Fallback: tab-separated RE: paragraphs e.g. "RE:\tTrademark:\tWeather"
+    if not result["trademark_name"] or not result["applicant_name"]:
+        for para in doc.paragraphs:
+            text = para.text.strip()
+            if not text:
+                continue
+            parts = [p.strip() for p in re.split(r"\t+", text)]
+            # "RE:\tTrademark:\tWeather" or "Trademark:\tWeather"
+            for i, part in enumerate(parts):
+                if not result["trademark_name"] and re.match(r"Trademark\s*:|Marque\s*de\s*commerce\s*:", part, re.I):
+                    if i + 1 < len(parts) and parts[i + 1]:
+                        result["trademark_name"] = parts[i + 1]
+                if not result["applicant_name"] and re.match(r"Applicant\s*:|Demandeur\s*:", part, re.I):
+                    if i + 1 < len(parts) and parts[i + 1]:
+                        result["applicant_name"] = parts[i + 1]
+
     return result
 
 
 def extract_document_debug(file_path: str) -> dict:
-    """Return raw text from paragraphs and tables for diagnosing extraction issues."""
+    """Return raw text from all document areas for diagnosing extraction issues."""
     doc = Document(file_path)
     paras = [p.text for p in doc.paragraphs if p.text.strip()]
     tables = []
     for t_idx, table in enumerate(doc.tables):
         rows = [[cell.text.strip() for cell in row.cells] for row in table.rows]
         tables.append({"table_index": t_idx, "rows": rows})
-    return {"paragraphs": paras[:60], "tables": tables}
+    headers = _iter_header_chunks(doc)
+    textboxes = _iter_textbox_chunks(doc)
+    return {
+        "paragraphs": paras[:60],
+        "tables": tables,
+        "headers": headers,
+        "textboxes": textboxes,
+    }
 
 
 def parse_office_action(file_path: str) -> ParsedOfficeAction:
@@ -170,7 +251,7 @@ def parse_office_action(file_path: str) -> ParsedOfficeAction:
         full_text_lines.append(para.text)
 
     re_fields = _extract_re_table(doc)
-    app_number, ir_number = _extract_numbers(paragraphs_with_formatting, doc.tables)
+    app_number, ir_number = _extract_numbers(paragraphs_with_formatting, doc)
 
     return ParsedOfficeAction(
         application_number=app_number,
