@@ -25,13 +25,14 @@ def research_context(applicant_name: str, trademark_name: str) -> dict:
 
     prompt = f"""You are assisting a Canadian trademark agent preparing an office action response.
 
-Search the web and answer two questions:
-1. What kind of business or entity is "{applicant_name}"? (industry, products/services they offer)
-2. Is the trademark "{trademark_name}" visibly in active commercial use online? Find a URL if possible.
+Search the web for "{applicant_name}" and the trademark "{trademark_name}". Your goal is to understand:
+1. What kind of business or entity "{applicant_name}" is — industry, what they make or sell
+2. Whether and how the trademark "{trademark_name}" is in active commercial use online
+3. If you find a website using the trademark, look at what SPECIFIC goods or services are sold or offered under it — product categories, types of services, etc.
 
 Return ONLY a JSON object — no markdown, no explanation, no other text:
 {{
-  "blurb": "3–5 sentence paragraph: describe the applicant's business, then note whether the trademark is in active use and mention the URL if you found one",
+  "blurb": "3–5 sentences: describe the applicant's business, then describe specifically what the trademark is being used for on their website (e.g. 'The trademark is used on a website selling yoga pants, running shorts, and athletic accessories'), and include the URL",
   "trademark_url": "the most direct URL showing the trademark in use (homepage, product page, etc.), or null"
 }}"""
 

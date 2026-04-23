@@ -151,12 +151,31 @@ def search_gsm_terms(term: str, nice_class: str = None):
     return {"term": term, "nice_class": nice_class, "results": results}
 
 
+class ResearchRequest(BaseModel):
+    applicant_name: str = ""
+    trademark_name: str = ""
+
+
+@app.post("/api/research-context")
+async def research_context_endpoint(body: ResearchRequest):
+    """Research the applicant's business and trademark use online."""
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not configured.")
+    import asyncio
+    try:
+        result = await asyncio.to_thread(
+            research_context, body.applicant_name, body.trademark_name
+        )
+    except Exception:
+        result = {"blurb": None, "trademark_url": None}
+    return result
+
+
 class AmendmentRequest(BaseModel):
     term: str
     nice_class: str = ""
     reason: str = ""
-    applicant_name: str = ""
-    trademark_name: str = ""
+    business_context: str = ""   # pre-loaded from /api/research-context
 
 
 @app.post("/api/suggest-amendments")
@@ -170,19 +189,11 @@ async def suggest_amendments(body: AmendmentRequest):
     gsm = search_gsm(body.term, body.nice_class or None, limit=15)
     sg  = search_specificity(body.term, body.nice_class or None)
 
-    # Research applicant/trademark first so suggestions can be tiered by business context
-    try:
-        research = await asyncio.to_thread(
-            research_context, body.applicant_name, body.trademark_name
-        )
-    except Exception:
-        research = {"blurb": None, "trademark_url": None}
-
     try:
         suggestions = await asyncio.to_thread(
             generate_amendment_suggestions,
             body.term, body.nice_class, body.reason, gsm, sg,
-            research.get("blurb") or "",
+            body.business_context,
         )
     except Exception:
         suggestions = []
@@ -190,7 +201,6 @@ async def suggest_amendments(body: AmendmentRequest):
     return {
         "term": body.term,
         "nice_class": body.nice_class,
-        "research": research,
         "gsm_matches": gsm,
         "specificity_guidance": sg,
         "suggestions": suggestions,
