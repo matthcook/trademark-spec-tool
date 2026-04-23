@@ -428,6 +428,9 @@
   const dropzone  = document.getElementById("dropzone");
   const panel     = document.getElementById("amendment-panel");
 
+  // Holds the last parsed analysis so click handlers can read applicant/trademark
+  let currentAnalysis = null;
+
   // Drag and drop
   dropzone.addEventListener("dragover",  e => { e.preventDefault(); dropzone.classList.add("dragover"); });
   dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
@@ -475,6 +478,7 @@
 
   function render(data) {
     const a = data.analysis;
+    currentAnalysis = a;
 
     // Meta
     document.getElementById("metaApp").textContent       = a.application_number || "—";
@@ -518,7 +522,13 @@
         document.getElementById("panel-term").textContent   = el.dataset.term;
         document.getElementById("panel-reason").textContent = el.dataset.reason;
         panel.style.display = "block";
-        loadAmendments(el.dataset.term, el.dataset.niceClass, el.dataset.reason);
+        loadAmendments(
+          el.dataset.term,
+          el.dataset.niceClass,
+          el.dataset.reason,
+          currentAnalysis ? (currentAnalysis.applicant_name || "") : "",
+          currentAnalysis ? (currentAnalysis.trademark_name || "") : "",
+        );
       });
     });
 
@@ -550,19 +560,23 @@
 
   // ── Amendment engine ──────────────────────────────────────────────────────────
 
-  async function loadAmendments(term, niceClass, reason) {
+  async function loadAmendments(term, niceClass, reason, applicantName, trademarkName) {
     const body = document.getElementById("panel-body");
     body.innerHTML = `
       <div class="panel-loading">
         <div class="spinner"></div><br>
-        Searching G&amp;S Manual and generating suggestions…
+        Researching applicant &amp; generating suggestions…
       </div>`;
 
     try {
       const res = await fetch("/api/suggest-amendments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ term, nice_class: niceClass, reason }),
+        body: JSON.stringify({
+          term, nice_class: niceClass, reason,
+          applicant_name: applicantName,
+          trademark_name: trademarkName,
+        }),
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
@@ -575,26 +589,53 @@
   function renderAmendments(container, data) {
     let html = "";
 
-    // AI suggestions
-    if (data.suggestions && data.suggestions.length > 0) {
+    // Research blurb
+    const r = data.research || {};
+    if (r.blurb) {
+      let blurbHtml = esc(r.blurb);
+      if (r.trademark_url) {
+        // Linkify the URL if it appears in the text, otherwise append it
+        const escapedUrl = esc(r.trademark_url);
+        blurbHtml = blurbHtml.includes(escapedUrl)
+          ? blurbHtml.replace(escapedUrl, `<a href="${escapedUrl}" target="_blank" style="color:#4a6fa5">${escapedUrl}</a>`)
+          : blurbHtml + ` <a href="${escapedUrl}" target="_blank" style="color:#4a6fa5">${escapedUrl}</a>`;
+      }
       html += `<div class="panel-section">
-        <div class="panel-section-label">Proposed replacements</div>`;
-      for (const s of data.suggestions) {
-        html += `
+        <div class="panel-section-label">Applicant &amp; trademark research</div>
+        <div style="font-size:0.82rem;color:#444;line-height:1.6;background:#f9fbff;border-left:3px solid #4a6fa5;padding:10px 12px;border-radius:0 6px 6px 0">${blurbHtml}</div>
+      </div>`;
+    }
+
+    // AI suggestions — split into tiers
+    if (data.suggestions && data.suggestions.length > 0) {
+      const tier1 = data.suggestions.filter(s => !s.tier || s.tier === 1);
+      const tier2 = data.suggestions.filter(s => s.tier === 2);
+
+      const renderCards = (items) => items.map(s => `
         <div class="suggestion-card">
           <button class="copy-btn" onclick="copyTerm(this, ${JSON.stringify(esc(s.replacement))})">Copy</button>
           <div class="replacement">${esc(s.replacement)}</div>
           <div class="rationale">${esc(s.rationale)}</div>
           <span class="source-tag">${esc(s.source)}</span>
+        </div>`).join("");
+
+      html += `<div class="panel-section">
+        <div class="panel-section-label">${r.blurb ? "Best fits for this applicant" : "Proposed replacements"}</div>
+        ${renderCards(tier1.length ? tier1 : data.suggestions)}
+      </div>`;
+
+      if (tier2.length) {
+        html += `<div class="panel-section">
+          <div class="panel-section-label">Other options</div>
+          ${renderCards(tier2)}
         </div>`;
       }
-      html += `</div>`;
     }
 
     // GSM matches
     if (data.gsm_matches && data.gsm_matches.length > 0) {
       html += `<div class="panel-section">
-        <div class="panel-section-label">Pre-approved G&amp;S Manual matches</div>
+        <div class="panel-section-label">All pre-approved G&amp;S Manual matches</div>
         <ul class="gsm-list">`;
       for (const m of data.gsm_matches.slice(0, 12)) {
         html += `<li onclick="copyTerm(null, ${JSON.stringify(esc(m.term))}, true)">

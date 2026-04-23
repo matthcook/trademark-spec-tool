@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 from doc_parser import parse_office_action
 from cipo import fetch_application
-from analyzer import analyze_office_action, generate_amendment_suggestions
+from analyzer import analyze_office_action, generate_amendment_suggestions, research_context
 from cipo_resources import init_db, load_all, search_specificity, search_tem, search_gsm, get_metadata, resources_loaded, gsm_loaded
 
 load_dotenv()
@@ -155,6 +155,8 @@ class AmendmentRequest(BaseModel):
     term: str
     nice_class: str = ""
     reason: str = ""
+    applicant_name: str = ""
+    trademark_name: str = ""
 
 
 @app.post("/api/suggest-amendments")
@@ -163,18 +165,32 @@ async def suggest_amendments(body: AmendmentRequest):
     if not os.environ.get("ANTHROPIC_API_KEY"):
         raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not configured.")
 
-    gsm     = search_gsm(body.term, body.nice_class or None, limit=15)
-    sg      = search_specificity(body.term, body.nice_class or None)
+    import asyncio
+
+    gsm = search_gsm(body.term, body.nice_class or None, limit=15)
+    sg  = search_specificity(body.term, body.nice_class or None)
+
+    # Research applicant/trademark first so suggestions can be tiered by business context
     try:
-        suggestions = generate_amendment_suggestions(
-            body.term, body.nice_class, body.reason, gsm, sg
+        research = await asyncio.to_thread(
+            research_context, body.applicant_name, body.trademark_name
         )
-    except Exception as e:
+    except Exception:
+        research = {"blurb": None, "trademark_url": None}
+
+    try:
+        suggestions = await asyncio.to_thread(
+            generate_amendment_suggestions,
+            body.term, body.nice_class, body.reason, gsm, sg,
+            research.get("blurb") or "",
+        )
+    except Exception:
         suggestions = []
 
     return {
         "term": body.term,
         "nice_class": body.nice_class,
+        "research": research,
         "gsm_matches": gsm,
         "specificity_guidance": sg,
         "suggestions": suggestions,
