@@ -94,14 +94,32 @@ async def parse_objection(file: UploadFile = File(...)):
         cipo_app = None
         cipo_error = None
         cipo_spec_loaded = False
-        if parsed.application_number:
+        lookup_number = parsed.application_number or parsed.ir_number
+        if lookup_number:
             try:
-                cipo_app = fetch_application(parsed.application_number)
+                cipo_app = fetch_application(lookup_number)
                 cipo_spec_loaded = bool(cipo_app and cipo_app.specification)
+                # If primary number returned no spec but we have an IR number, try that
+                if not cipo_spec_loaded and parsed.ir_number and lookup_number != parsed.ir_number:
+                    try:
+                        ir_app = fetch_application(parsed.ir_number)
+                        if ir_app and ir_app.specification:
+                            cipo_app = ir_app
+                            cipo_spec_loaded = True
+                    except Exception:
+                        pass
             except Exception as e:
                 cipo_error = str(e)
+                # Fall back to IR number if app number lookup failed entirely
+                if parsed.ir_number and parsed.ir_number != lookup_number:
+                    try:
+                        cipo_app = fetch_application(parsed.ir_number)
+                        cipo_spec_loaded = bool(cipo_app and cipo_app.specification)
+                        cipo_error = None
+                    except Exception as e2:
+                        cipo_error = f"App number lookup failed ({e}); IR number lookup also failed ({e2})"
         else:
-            cipo_error = "Application number not found in document — could not fetch full specification from CIPO"
+            cipo_error = "No application number or IR number found in document — could not fetch full specification from CIPO"
 
         # Step 3: Analyze with Claude
         analysis = analyze_office_action(parsed, cipo_app)
@@ -116,6 +134,7 @@ async def parse_objection(file: UploadFile = File(...)):
             "analysis": analysis,
             "cipo_fetch_error": cipo_error,
             "cipo_spec_loaded": cipo_spec_loaded,
+            "ir_number": parsed.ir_number,
         }
 
     finally:

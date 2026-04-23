@@ -570,6 +570,10 @@
           <div class="val" id="metaApp">—</div>
         </div>
         <div class="meta-item">
+          <div class="lbl">IR No.</div>
+          <div class="val" id="metaIR">—</div>
+        </div>
+        <div class="meta-item">
           <div class="lbl">Examiner</div>
           <div class="val" id="metaExaminer">—</div>
         </div>
@@ -900,6 +904,7 @@
     currentResearch = null;
 
     document.getElementById("metaApp").textContent      = a.application_number || "—";
+    document.getElementById("metaIR").textContent       = data.ir_number || "—";
     document.getElementById("metaExaminer").textContent = a.examiner_name || "—";
     document.getElementById("metaTrademark").textContent = a.trademark_name || "—";
     document.getElementById("metaApplicant").textContent = a.applicant_name || "—";
