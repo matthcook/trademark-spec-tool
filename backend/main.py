@@ -87,33 +87,34 @@ async def parse_objection(file: UploadFile = File(...)):
         tmp_path = tmp.name
 
     try:
+        import asyncio
+
         # Step 1: Parse the .docx
         parsed = parse_office_action(tmp_path)
 
-        # Step 2: Fetch CIPO application data if we found an application number
+        # Step 2: Fetch CIPO application data (run in thread — can block 20-30s with web search)
         cipo_app = None
         cipo_error = None
         cipo_spec_loaded = False
 
-        # Try all available numbers; stop as soon as one returns a specification
         numbers_to_try = [n for n in [parsed.application_number, parsed.ir_number] if n]
         if numbers_to_try:
             for number in numbers_to_try:
                 try:
-                    result = fetch_application(number)
+                    result = await asyncio.to_thread(fetch_application, number)
                     if result and result.specification:
                         cipo_app = result
                         cipo_spec_loaded = True
                         break
                     elif result and not cipo_app:
-                        cipo_app = result   # keep stub so we have source_url etc.
+                        cipo_app = result
                 except Exception as e:
                     cipo_error = str(e)
         else:
             cipo_error = "No application number or IR number found in document — could not fetch full specification from CIPO"
 
-        # Step 3: Analyze with Claude
-        analysis = analyze_office_action(parsed, cipo_app)
+        # Step 3: Analyze with Claude (also run in thread)
+        analysis = await asyncio.to_thread(analyze_office_action, parsed, cipo_app)
 
         # Merge parser-extracted fields into analysis (parser sees tables; Claude only sees paragraphs)
         if parsed.application_number and not analysis.get("application_number"):
