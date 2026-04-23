@@ -115,14 +115,16 @@ def generate_amendment_suggestions(
 Objected term: "{term}" (Class {nice_class})
 Examiner's reason: {reason or "not specific enough / not in ordinary commercial terms"}
 {context_block}{gsm_section}{sg_block}
-Your task: review the complete list of pre-approved terms above and SELECT the 6–10 most applicable replacements for this specific applicant.
+Your task: scan the ENTIRE pre-approved list above and SELECT the 10–15 best replacements for this applicant.
 
 Rules:
-1. STRONGLY prefer terms from the pre-approved list above — these will be accepted by CIPO without further objection
-2. If recommending a term from the list, copy it EXACTLY as written
-3. Only construct a new term (not from the list) if no pre-approved option adequately fits — label it "Constructed per specificity guidelines"
+1. STRONGLY prefer terms from the pre-approved list — these are accepted by CIPO without further objection
+2. Copy every recommended pre-approved term EXACTLY as written — do not paraphrase or shorten
+3. Read the full list before deciding — do not stop at the first plausible matches
 4. Each replacement must be more specific than "{term}"
-5. {tier_note}
+5. Include a range of specificity levels: some narrowly tailored to the applicant's exact use, some broader pre-approved options that still satisfy the examiner
+6. {tier_note}
+7. Only construct a new term if no pre-approved option adequately fits — label source "Constructed per specificity guidelines"
 
 Return a JSON array only — no markdown, no explanation:
 [
@@ -136,7 +138,7 @@ Return a JSON array only — no markdown, no explanation:
 
     message = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=2000,
+        max_tokens=3000,
         messages=[{"role": "user", "content": prompt}],
     )
 

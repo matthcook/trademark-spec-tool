@@ -1068,16 +1068,20 @@
     }
 
     // Section 2 — Live searchable list of ALL pre-approved terms
+    const clsNum = data.nice_class ? String(parseInt(data.nice_class)) : "";
     html += `
       <details class="sugg-group" open>
         <summary class="sugg-group-header">
           <span class="sugg-group-arrow">▶</span>
-          Browse all pre-approved G&amp;S terms
+          Browse pre-approved terms${clsNum ? ` — Class ${clsNum}` : ""}
           <span class="sugg-count" id="gsm-count-badge"></span>
         </summary>
         <div class="sugg-group-body">
+          <div style="font-size:0.71rem;color:#999;margin-bottom:6px">
+            Class ${clsNum} terms shown first — type to search all 81,000+ pre-approved entries
+          </div>
           <input type="text" id="gsm-search-input" class="gsm-search-input"
-                 placeholder="Search 81,000+ pre-approved terms…"
+                 placeholder="Search pre-approved terms…"
                  value="${esc(data.term || "")}">
           <div id="gsm-results-container" class="gsm-results-container">
             <div class="gsm-status">Loading…</div>
