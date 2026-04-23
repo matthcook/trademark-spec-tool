@@ -20,9 +20,10 @@ class CIPOApplication:
 
 def fetch_application(application_number: str) -> CIPOApplication:
     """
-    Fetch trademark application details from CIPO.
-    First tries a direct HTTP request; falls back to Claude web search
-    if the direct fetch fails or returns no specification.
+    Fetch trademark application details from CIPO via direct HTTP.
+    Note: CIPO's old URL infrastructure redirects to a dead IP, so this
+    currently returns a stub with no specification for most applications.
+    The analysis still works; the UI shows an amber banner when spec is missing.
     """
     app_number_clean = re.sub(r'[^\d]', '', application_number.strip())
     url = f"https://www.ic.gc.ca/app/opic-cipo/trdmrks/srch/tm-md-dtls.do?lang=eng&tmId={app_number_clean}"
@@ -33,23 +34,13 @@ def fetch_application(application_number: str) -> CIPOApplication:
         "Accept-Language": "en-CA,en;q=0.9",
     }
 
-    result = None
     try:
         with httpx.Client(follow_redirects=True, timeout=10) as client:
             response = client.get(url, headers=headers)
             if response.status_code == 200 and len(response.text) > 500:
-                result = _parse_cipo_html(app_number_clean, response.text, url)
+                return _parse_cipo_html(app_number_clean, response.text, url)
     except Exception:
         pass
-
-    # If direct fetch got nothing useful, try Claude web search
-    if not result or not result.specification:
-        searched = _fetch_via_web_search(app_number_clean, url)
-        if searched:
-            result = searched
-
-    if result:
-        return result
 
     return CIPOApplication(
         application_number=app_number_clean,

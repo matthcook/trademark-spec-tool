@@ -88,6 +88,7 @@ async def parse_objection(file: UploadFile = File(...)):
 
     try:
         import asyncio
+        import traceback
 
         # Step 1: Parse the .docx
         parsed = parse_office_action(tmp_path)
@@ -114,7 +115,11 @@ async def parse_objection(file: UploadFile = File(...)):
             cipo_error = "No application number or IR number found in document — could not fetch full specification from CIPO"
 
         # Step 3: Analyze with Claude (also run in thread)
-        analysis = await asyncio.to_thread(analyze_office_action, parsed, cipo_app)
+        try:
+            analysis = await asyncio.to_thread(analyze_office_action, parsed, cipo_app)
+        except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
         # Merge parser-extracted fields into analysis (parser sees tables; Claude only sees paragraphs)
         if parsed.application_number and not analysis.get("application_number"):
@@ -136,8 +141,16 @@ async def parse_objection(file: UploadFile = File(...)):
             "ir_number": parsed.ir_number,
         }
 
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
     finally:
-        os.unlink(tmp_path)
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
 
 
 @app.get("/api/resources/status")

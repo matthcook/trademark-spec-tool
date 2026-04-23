@@ -618,6 +618,14 @@
   let currentAnalysis = null;
   let currentResearch = null;
 
+  // Check server connectivity on load
+  fetch("/api/health").then(r => r.json()).then(d => {
+    statusEl.textContent = "";
+  }).catch(() => {
+    statusEl.textContent = "⚠ Cannot reach server at http://localhost:8000 — make sure the backend is running.";
+    statusEl.style.color = "#c0392b";
+  });
+
   // Per-class state: originalText, currentText, objectedTerms, appliedTerms
   const classStates = {};
 
@@ -663,12 +671,17 @@
 
     try {
       const res = await fetch("/api/parse-objection", { method: "POST", body: fd });
-      if (!res.ok) { const e = await res.json(); statusEl.textContent = "Error: " + (e.detail || "Unknown"); return; }
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try { const e = await res.json(); msg = e.detail || msg; } catch { msg = await res.text().catch(() => msg); }
+        statusEl.textContent = "Error: " + msg;
+        return;
+      }
       const data = await res.json();
       render(data);
       statusEl.textContent = "";
     } catch(e) {
-      statusEl.textContent = "Could not connect to server. Is the backend running?";
+      statusEl.textContent = "Upload error: " + (e && e.message ? e.message : String(e)) + " — check that http://localhost:8000 is accessible in your browser.";
     } finally {
       uploadBtn.disabled = false;
     }
