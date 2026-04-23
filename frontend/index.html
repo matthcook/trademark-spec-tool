@@ -34,7 +34,6 @@
       box-shadow: 0 1px 8px rgba(0,0,0,0.08);
       margin-bottom: 20px;
     }
-
     .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
     .card p.sub { font-size: 0.86rem; color: #666; line-height: 1.55; margin-bottom: 18px; }
 
@@ -115,19 +114,92 @@
       margin-bottom: 3px;
     }
 
-    /* Specification document */
-    .spec-doc { font-family: "Georgia", serif; }
+    /* Research blurbs — two separate sections */
+    .research-section {
+      margin-top: 12px;
+      background: #f9fbff;
+      border-left: 3px solid #4a6fa5;
+      border-radius: 0 6px 6px 0;
+      padding: 11px 14px;
+      font-size: 0.84rem;
+      color: #333;
+      line-height: 1.65;
+    }
+    .research-section.trademark-section {
+      border-left-color: #5b9a6b;
+      background: #f6fbf7;
+    }
+    .research-section .lbl {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #8899cc;
+      margin-bottom: 4px;
+    }
+    .research-section.trademark-section .lbl { color: #6aaa88; }
+    .research-section a.research-link {
+      display: inline-block;
+      margin-top: 5px;
+      font-size: 0.78rem;
+      color: #4a6fa5;
+      text-decoration: none;
+    }
+    .research-section a.research-link:hover { text-decoration: underline; }
+    .research-loading {
+      margin-top: 14px;
+      font-size: 0.8rem;
+      color: #aaa;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-    .class-block { margin-bottom: 28px; }
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 2px solid #e0e0e0;
+      border-top-color: #4a6fa5;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .research-loading .spinner { width: 14px; height: 14px; margin: 0; }
 
-    .class-heading {
+    /* ── Collapsible class blocks ──────────────────────────────────────────────── */
+    .class-details {
+      margin-bottom: 12px;
+      border: 1px solid #e0e6f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .class-details[open] { border-color: #c0cde0; }
+
+    .class-summary {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 10px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #e8ecf2;
+      padding: 10px 16px;
+      cursor: pointer;
+      background: #f6f8fc;
+      list-style: none;
+      user-select: none;
     }
+    .class-summary::-webkit-details-marker { display: none; }
+    .class-summary:hover { background: #eef2fb; }
+    .class-details[open] > .class-summary { background: #eef2fb; border-bottom: 1px solid #e0e6f0; }
+
+    .summary-arrow {
+      font-size: 0.65rem;
+      color: #aaa;
+      transition: transform 0.15s;
+      flex-shrink: 0;
+      display: inline-block;
+    }
+    .class-details[open] > .class-summary .summary-arrow { transform: rotate(90deg); }
+
     .class-badge {
       background: #1a1a2e;
       color: white;
@@ -137,25 +209,60 @@
       padding: 3px 10px;
       border-radius: 20px;
       letter-spacing: 0.03em;
+      flex-shrink: 0;
     }
     .class-type {
       font-family: -apple-system, sans-serif;
       font-size: 0.8rem;
-      color: #888;
+      color: #777;
       font-weight: 500;
+      flex: 1;
     }
-    .objection-count {
-      margin-left: auto;
+    .objection-pill {
+      flex-shrink: 0;
       font-family: -apple-system, sans-serif;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
+      color: white;
+      background: #c0392b;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+    .modified-pill {
+      flex-shrink: 0;
+      font-family: -apple-system, sans-serif;
+      font-size: 0.7rem;
       color: #c0392b;
+      background: #fce8e6;
+      padding: 2px 8px;
+      border-radius: 10px;
       font-weight: 600;
     }
 
+    .spec-content { padding: 16px 20px 20px; }
+
     .spec-text {
+      font-family: "Georgia", serif;
       font-size: 0.95rem;
-      line-height: 1.75;
+      line-height: 1.8;
       color: #222;
+      outline: none;
+      min-height: 24px;
+    }
+    .spec-text:focus {
+      background: #fafbff;
+      border-radius: 4px;
+    }
+
+    /* Tracked changes */
+    .tc-del {
+      text-decoration: line-through;
+      color: #2563eb;
+      text-decoration-color: #2563eb;
+    }
+    .tc-ins {
+      color: #dc2626;
+      font-weight: 500;
     }
 
     /* Highlighted objected terms */
@@ -166,22 +273,21 @@
       padding: 0 2px;
       cursor: pointer;
       transition: background 0.12s;
-      position: relative;
     }
     .objected-term:hover { background: #ffe082; }
     .objected-term.active { background: #ffd54f; }
 
-    /* Amendment panel */
+    /* ── Amendment side panel ─────────────────────────────────────────────────── */
     #amendment-panel {
       display: none;
       position: fixed;
       right: 0; top: 0; bottom: 0;
-      width: 360px;
+      width: 380px;
       background: white;
       box-shadow: -4px 0 24px rgba(0,0,0,0.12);
       z-index: 100;
       overflow-y: auto;
-      padding: 28px 24px;
+      padding: 28px 22px;
     }
     #amendment-panel h3 { font-size: 1rem; margin-bottom: 6px; }
     #amendment-panel .term-display {
@@ -216,42 +322,80 @@
     }
     #panel-close:hover { color: #333; }
 
-    /* Amendment panel sections */
-    .panel-section { margin-bottom: 22px; }
-    .panel-section-label {
-      font-size: 0.65rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: #aaa;
-      margin-bottom: 8px;
-    }
-
-    /* Loading spinner */
+    /* Panel loading */
     .panel-loading {
       text-align: center;
       padding: 30px 0;
       color: #888;
       font-size: 0.85rem;
     }
-    .spinner {
-      display: inline-block;
-      width: 20px; height: 20px;
-      border: 2px solid #e0e0e0;
-      border-top-color: #4a6fa5;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      margin-bottom: 8px;
+
+    /* Panel error */
+    .panel-error {
+      background: #fff5f5;
+      border: 1px solid #fecaca;
+      border-radius: 7px;
+      padding: 12px;
+      font-size: 0.82rem;
+      color: #c0392b;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Collapsible suggestion groups ───────────────────────────────────────── */
+    .sugg-group {
+      margin-bottom: 12px;
+      border: 1px solid #e0e6f0;
+      border-radius: 7px;
+      overflow: hidden;
+    }
+    .sugg-group[open] { border-color: #c0cde0; }
+
+    .sugg-group-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      background: #f4f7ff;
+      cursor: pointer;
+      font-family: -apple-system, sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      list-style: none;
+      user-select: none;
+    }
+    .sugg-group-header::-webkit-details-marker { display: none; }
+    .sugg-group[open] > .sugg-group-header { border-bottom: 1px solid #e0e6f0; }
+    .sugg-group-arrow {
+      font-size: 0.6rem;
+      color: #aaa;
+      transition: transform 0.15s;
+      display: inline-block;
+    }
+    .sugg-group[open] > .sugg-group-header .sugg-group-arrow { transform: rotate(90deg); }
+    .sugg-count {
+      margin-left: auto;
+      background: #4a6fa5;
+      color: white;
+      font-size: 0.68rem;
+      padding: 1px 7px;
+      border-radius: 10px;
+    }
+    .sugg-group-body { padding: 8px 8px 2px; }
 
     /* Suggestion cards */
     .suggestion-card {
       background: #f9fbff;
       border: 1px solid #dde4f0;
       border-radius: 7px;
-      padding: 11px 13px;
+      padding: 11px 12px;
       margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .suggestion-card .card-actions {
+      float: right;
+      display: flex;
+      gap: 5px;
+      margin-left: 8px;
     }
     .suggestion-card .replacement {
       font-family: Georgia, serif;
@@ -273,84 +417,46 @@
       padding: 2px 7px;
       border-radius: 10px;
       display: inline-block;
-      margin-right: 6px;
     }
+
+    .use-btn {
+      background: #1a1a2e;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 0.7rem;
+      padding: 3px 9px;
+      cursor: pointer;
+      transition: background 0.12s;
+      white-space: nowrap;
+    }
+    .use-btn:hover { background: #2e2e50; }
+    .use-btn.applied { background: #2e7d32; }
+
     .copy-btn {
       background: none;
       border: 1px solid #c0ccdf;
       border-radius: 5px;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       color: #4a6fa5;
-      padding: 2px 9px;
+      padding: 3px 8px;
       cursor: pointer;
-      float: right;
       transition: background 0.12s;
+      white-space: nowrap;
     }
     .copy-btn:hover { background: #eef2fb; }
     .copy-btn.copied { color: #2e7d32; border-color: #a5d6a7; background: #e6f4ea; }
 
-    /* GSM match list */
-    .gsm-list { list-style: none; padding: 0; }
-    .gsm-list li {
-      font-size: 0.82rem;
-      font-family: Georgia, serif;
-      padding: 5px 9px;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background 0.1s;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .gsm-list li:hover { background: #f0f4ff; }
-    .gsm-list li .gsm-term { flex: 1; }
-    .gsm-list li .gsm-copy {
+    /* Panel sections */
+    .panel-section { margin-bottom: 18px; }
+    .panel-section-label {
       font-size: 0.65rem;
-      color: #aaa;
-      flex-shrink: 0;
-    }
-    .gsm-list li:hover .gsm-copy { color: #4a6fa5; }
-
-    /* Error state */
-    .panel-error {
-      background: #fff5f5;
-      border: 1px solid #fecaca;
-      border-radius: 7px;
-      padding: 12px;
-      font-size: 0.82rem;
-      color: #c0392b;
-    }
-
-    /* Research blurb */
-    .research-blurb {
-      margin-top: 16px;
-      background: #f9fbff;
-      border-left: 3px solid #4a6fa5;
-      border-radius: 0 6px 6px 0;
-      padding: 11px 14px;
-      font-size: 0.84rem;
-      color: #333;
-      line-height: 1.65;
-    }
-    .research-blurb .lbl {
-      font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #8899cc;
-      margin-bottom: 5px;
-    }
-    .research-blurb a { color: #4a6fa5; }
-    .research-loading {
-      margin-top: 16px;
-      font-size: 0.8rem;
+      letter-spacing: 0.07em;
       color: #aaa;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      margin-bottom: 8px;
     }
-    .research-loading .spinner { width: 14px; height: 14px; border-width: 2px; margin: 0; }
   </style>
 </head>
 <body>
@@ -425,9 +531,9 @@
     <div class="card">
       <h2>Specification</h2>
       <p class="sub" style="margin-bottom:20px">
-        Highlighted terms have been objected to by the examiner. Click any highlighted term to view amendment options.
+        Classes with objections are expanded. Click any highlighted term to view amendment suggestions. You can also type directly in the specification — additions appear in red, deletions in blue strikethrough.
       </p>
-      <div class="spec-doc" id="specDoc"></div>
+      <div id="specDoc"></div>
     </div>
 
   </div>
@@ -442,11 +548,20 @@
   const dropzone  = document.getElementById("dropzone");
   const panel     = document.getElementById("amendment-panel");
 
-  // Holds the last parsed analysis and pre-loaded research
-  let currentAnalysis  = null;
-  let currentResearch  = null;   // {blurb, trademark_url} — loaded async after upload
+  let currentAnalysis = null;
+  let currentResearch = null;
 
-  // Drag and drop
+  // Per-class state: originalText, currentText, objectedTerms, appliedTerms
+  const classStates = {};
+
+  // Panel state: which term/class is currently open
+  let panelState = { term: null, niceClass: null, reason: null };
+
+  // Debounce timers for tracked-changes re-render
+  const diffTimers = {};
+
+  // ── Drag & drop / file selection ──────────────────────────────────────────────
+
   dropzone.addEventListener("dragover",  e => { e.preventDefault(); dropzone.classList.add("dragover"); });
   dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
   dropzone.addEventListener("drop", e => {
@@ -456,17 +571,18 @@
     else statusEl.textContent = "Please drop a .docx file.";
   });
   fileInput.addEventListener("change", () => { if (fileInput.files[0]) enable(fileInput.files[0].name); });
-
   function enable(name) { uploadBtn.disabled = false; statusEl.textContent = "Selected: " + name; }
 
-  // Panel close
+  // ── Panel ──────────────────────────────────────────────────────────────────────
+
   document.getElementById("panel-close").addEventListener("click", closePanel);
   function closePanel() {
     panel.style.display = "none";
     document.querySelectorAll(".objected-term.active").forEach(el => el.classList.remove("active"));
   }
 
-  // Upload & analyze
+  // ── Upload ─────────────────────────────────────────────────────────────────────
+
   uploadBtn.addEventListener("click", async () => {
     const file = fileInput.files[0];
     if (!file) return;
@@ -491,14 +607,237 @@
     }
   });
 
+  // ── Utilities ─────────────────────────────────────────────────────────────────
+
+  function esc(s) {
+    return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  function escapeRegex(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function extractPlainText(markedText) {
+    return (markedText || "").replace(/\{\{([^}]+)\}\}/g, "$1");
+  }
+
+  // ── Word-level LCS diff ───────────────────────────────────────────────────────
+
+  function wordDiff(a, b) {
+    const tok = s => {
+      const t = []; let i = 0;
+      while (i < s.length) {
+        const ws = /\s/.test(s[i]);
+        let j = i;
+        while (j < s.length && /\s/.test(s[j]) === ws) j++;
+        t.push(s.slice(i, j));
+        i = j;
+      }
+      return t;
+    };
+    const A = tok(a), B = tok(b);
+    const m = A.length, n = B.length;
+    const dp = Array.from({length: m + 1}, () => new Int32Array(n + 1));
+    for (let i = 1; i <= m; i++)
+      for (let j = 1; j <= n; j++)
+        dp[i][j] = A[i-1] === B[j-1] ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
+    const segs = []; let i = m, j = n;
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && A[i-1] === B[j-1]) { segs.unshift({type:"eq", text:A[i-1]}); i--; j--; }
+      else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) { segs.unshift({type:"ins", text:B[j-1]}); j--; }
+      else { segs.unshift({type:"del", text:A[i-1]}); i--; }
+    }
+    const merged = [];
+    for (const s of segs) {
+      if (merged.length && merged[merged.length-1].type === s.type) merged[merged.length-1].text += s.text;
+      else merged.push({...s});
+    }
+    return merged;
+  }
+
+  // ── Caret position helpers ────────────────────────────────────────────────────
+
+  function getCaretOffset(el) {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return 0;
+    const r = sel.getRangeAt(0).cloneRange();
+    r.selectNodeContents(el);
+    r.setEnd(sel.getRangeAt(0).startContainer, sel.getRangeAt(0).startOffset);
+    return r.toString().length;
+  }
+
+  function setCaretOffset(el, offset) {
+    const range = document.createRange();
+    const sel = window.getSelection();
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let count = 0, node;
+    while ((node = walker.nextNode())) {
+      if (count + node.length >= offset) {
+        range.setStart(node, Math.min(offset - count, node.length));
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        return;
+      }
+      count += node.length;
+    }
+    range.selectNodeContents(el);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  // Extract the intended current text (ignoring tc-del spans)
+  function getSpecCurrentText(el) {
+    let text = "";
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (!node.parentElement.closest(".tc-del")) text += node.textContent;
+    }
+    return text;
+  }
+
+  // ── Spec rendering ────────────────────────────────────────────────────────────
+
+  // Wrap objected terms in eq segments with clickable spans
+  function wrapObjectedTerms(plainText, objectedTerms, niceClass) {
+    let html = esc(plainText);
+    for (const t of (objectedTerms || [])) {
+      const escapedTerm = esc(t.term);
+      const reason = esc(t.reason || "objected by examiner");
+      const re = new RegExp(escapedTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+      html = html.replace(re, m =>
+        `<span class="objected-term" data-term="${escapedTerm}" data-reason="${reason}" data-nice-class="${esc(niceClass)}">${m}</span>`
+      );
+    }
+    return html;
+  }
+
+  // Initial render using {{}} markers from the API
+  function buildMarkedText(markedText, objectedTerms, niceClass) {
+    const reasons = {};
+    for (const t of objectedTerms) reasons[t.term.toLowerCase()] = t.reason || "objected by examiner";
+    let html = esc(markedText);
+    html = html.replace(/\{\{([^}]+)\}\}/g, (_, term) => {
+      const reason = reasons[term.toLowerCase()] || "objected by examiner";
+      return `<span class="objected-term" data-term="${esc(term)}" data-reason="${esc(reason)}" data-nice-class="${esc(niceClass)}">${esc(term)}</span>`;
+    });
+    return html;
+  }
+
+  // Re-render a spec div using tracked changes diff
+  function renderSpecDiff(specDiv, niceClass) {
+    const state = classStates[niceClass];
+    if (!state) return;
+    const isActive = document.activeElement === specDiv;
+    const caretOffset = isActive ? getCaretOffset(specDiv) : null;
+
+    const diff = wordDiff(state.originalText, state.currentText);
+    let html = "";
+    for (const seg of diff) {
+      if (seg.type === "del") html += `<span class="tc-del">${esc(seg.text)}</span>`;
+      else if (seg.type === "ins") html += `<span class="tc-ins">${esc(seg.text)}</span>`;
+      else html += wrapObjectedTerms(seg.text, state.objectedTerms, niceClass);
+    }
+    specDiv.innerHTML = html;
+    wireTermClicks(specDiv);
+
+    if (isActive && caretOffset !== null) setCaretOffset(specDiv, caretOffset);
+  }
+
+  function wireTermClicks(root) {
+    root.querySelectorAll(".objected-term").forEach(el => {
+      el.addEventListener("click", () => handleTermClick(el));
+    });
+  }
+
+  function handleTermClick(el) {
+    document.querySelectorAll(".objected-term.active").forEach(e => e.classList.remove("active"));
+    el.classList.add("active");
+    panelState.term = el.dataset.term;
+    panelState.niceClass = el.dataset.niceClass;
+    panelState.reason = el.dataset.reason;
+    document.getElementById("panel-term").textContent = el.dataset.term;
+    document.getElementById("panel-reason").textContent = el.dataset.reason;
+    panel.style.display = "block";
+    const bc = currentResearch
+      ? [currentResearch.applicant_blurb, currentResearch.trademark_blurb].filter(Boolean).join(" ")
+      : "";
+    loadAmendments(el.dataset.term, el.dataset.niceClass, el.dataset.reason, bc);
+  }
+
+  // Apply a suggestion to the spec (tracked change: old term → replacement)
+  function applyTrackedChange(niceClass, term, replacement) {
+    const state = classStates[niceClass];
+    if (!state) return;
+    // Undo a previous replacement for this term if any
+    const key = term.toLowerCase();
+    if (state.appliedTerms && state.appliedTerms[key]) {
+      const prev = state.appliedTerms[key];
+      state.currentText = state.currentText.replace(new RegExp(escapeRegex(prev), "gi"), term);
+    }
+    // Apply the new replacement
+    state.currentText = state.currentText.replace(new RegExp(escapeRegex(term), "gi"), replacement);
+    if (!state.appliedTerms) state.appliedTerms = {};
+    state.appliedTerms[key] = replacement;
+
+    const specDiv = document.querySelector(`[data-spec-class="${niceClass}"]`);
+    if (specDiv) renderSpecDiff(specDiv, niceClass);
+    markClassModified(niceClass);
+  }
+
+  function markClassModified(niceClass) {
+    const details = document.querySelector(`.class-details[data-nice-class="${niceClass}"]`);
+    if (!details) return;
+    if (!details.querySelector(".modified-pill")) {
+      const pill = document.createElement("span");
+      pill.className = "modified-pill";
+      pill.textContent = "modified";
+      details.querySelector(".class-summary").appendChild(pill);
+    }
+  }
+
+  // ── Delegated event handlers ──────────────────────────────────────────────────
+
+  // Tracked changes re-render on typing
+  document.getElementById("specDoc").addEventListener("input", e => {
+    const specDiv = e.target.closest("[data-spec-class]");
+    if (!specDiv) return;
+    const niceClass = specDiv.dataset.specClass;
+    clearTimeout(diffTimers[niceClass]);
+    diffTimers[niceClass] = setTimeout(() => {
+      if (!classStates[niceClass]) return;
+      const caretOffset = getCaretOffset(specDiv);
+      classStates[niceClass].currentText = getSpecCurrentText(specDiv);
+      renderSpecDiff(specDiv, niceClass);
+      if (document.activeElement === specDiv) setCaretOffset(specDiv, caretOffset);
+      markClassModified(niceClass);
+    }, 400);
+  });
+
+  // "Use this" button
+  document.addEventListener("click", e => {
+    const btn = e.target.closest(".use-btn");
+    if (!btn) return;
+    const replacement = btn.dataset.replacement;
+    if (panelState.niceClass && panelState.term && replacement) {
+      applyTrackedChange(panelState.niceClass, panelState.term, replacement);
+      btn.textContent = "Applied!";
+      btn.classList.add("applied");
+      setTimeout(() => { btn.textContent = "Use this"; btn.classList.remove("applied"); }, 2500);
+    }
+  });
+
+  // ── Main render ───────────────────────────────────────────────────────────────
+
   function render(data) {
     const a = data.analysis;
     currentAnalysis = a;
-    currentResearch  = null;
+    currentResearch = null;
 
-    // Meta
-    document.getElementById("metaApp").textContent       = a.application_number || "—";
-    document.getElementById("metaExaminer").textContent  = a.examiner_name || "—";
+    document.getElementById("metaApp").textContent      = a.application_number || "—";
+    document.getElementById("metaExaminer").textContent = a.examiner_name || "—";
     document.getElementById("metaTrademark").textContent = a.trademark_name || "—";
     document.getElementById("metaApplicant").textContent = a.applicant_name || "—";
     document.getElementById("conventionText").textContent = a.formatting_convention || "—";
@@ -508,77 +847,53 @@
       document.getElementById("deadlineBanner").style.display = "block";
     }
 
-    // Specification
     const doc = document.getElementById("specDoc");
     doc.innerHTML = "";
 
     for (const cls of (a.classes || [])) {
-      const block = document.createElement("div");
-      block.className = "class-block";
+      const objectionCount = (cls.marked_text || "").match(/\{\{[^}]+\}\}/g)?.length || 0;
+      const origText = extractPlainText(cls.marked_text || "");
 
-      const count = cls.objected_terms ? cls.objected_terms.length : 0;
-      const totalOccurrences = countOccurrences(cls.marked_text || "", cls.objected_terms || []);
+      classStates[cls.nice_class] = {
+        originalText: origText,
+        currentText: origText,
+        objectedTerms: cls.objected_terms || [],
+        appliedTerms: {},
+      };
 
-      block.innerHTML = `
-        <div class="class-heading">
+      const details = document.createElement("details");
+      details.className = "class-details";
+      details.dataset.niceClass = cls.nice_class;
+      if (objectionCount > 0) details.open = true;
+
+      const pillHtml = objectionCount > 0
+        ? `<span class="objection-pill">${objectionCount} objection${objectionCount !== 1 ? "s" : ""}</span>`
+        : "";
+
+      const specHtml = buildMarkedText(cls.marked_text || "", cls.objected_terms || [], cls.nice_class);
+
+      details.innerHTML = `
+        <summary class="class-summary">
+          <span class="summary-arrow">▶</span>
           <span class="class-badge">Class ${esc(cls.nice_class)}</span>
           <span class="class-type">${esc(cls.goods_or_services)}</span>
-          ${totalOccurrences > 0 ? `<span class="objection-count">${totalOccurrences} objection${totalOccurrences !== 1 ? "s" : ""}</span>` : ""}
-        </div>
-        <div class="spec-text">${buildMarkedText(cls.marked_text || "", cls.objected_terms || [], cls.nice_class)}</div>
-      `;
-      doc.appendChild(block);
-    }
+          ${pillHtml}
+        </summary>
+        <div class="spec-content">
+          <div class="spec-text" contenteditable="true" spellcheck="false"
+               data-spec-class="${esc(cls.nice_class)}">${specHtml}</div>
+        </div>`;
 
-    // Wire up click handlers
-    doc.querySelectorAll(".objected-term").forEach(el => {
-      el.addEventListener("click", () => {
-        document.querySelectorAll(".objected-term.active").forEach(e => e.classList.remove("active"));
-        el.classList.add("active");
-        document.getElementById("panel-term").textContent   = el.dataset.term;
-        document.getElementById("panel-reason").textContent = el.dataset.reason;
-        panel.style.display = "block";
-        loadAmendments(
-          el.dataset.term,
-          el.dataset.niceClass,
-          el.dataset.reason,
-          currentResearch ? (currentResearch.blurb || "") : "",
-        );
-      });
-    });
+      doc.appendChild(details);
+      wireTermClicks(details);
+    }
 
     resultsEl.style.display = "block";
     resultsEl.scrollIntoView({ behavior: "smooth" });
-
-    // Fire research in background — populates the blurb once ready
     loadResearch(a.applicant_name, a.trademark_name);
   }
 
-  // Replace {{term}} markers with highlighted spans
-  function buildMarkedText(markedText, objectedTerms, niceClass) {
-    const reasons = {};
-    for (const t of objectedTerms) reasons[t.term.toLowerCase()] = t.reason || "objected by examiner";
-
-    let html = esc(markedText);
-    html = html.replace(/\{\{([^}]+)\}\}/g, (_, term) => {
-      const reason = reasons[term.toLowerCase()] || "objected by examiner";
-      return `<span class="objected-term" data-term="${esc(term)}" data-reason="${esc(reason)}" data-nice-class="${esc(niceClass || "")}">${esc(term)}</span>`;
-    });
-    return html;
-  }
-
-  function countOccurrences(markedText, objectedTerms) {
-    const matches = markedText.match(/\{\{[^}]+\}\}/g);
-    return matches ? matches.length : 0;
-  }
-
-  function esc(s) {
-    return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-  }
-
-  // ── Amendment engine ──────────────────────────────────────────────────────────
-
-  // ── Research blurb (loads async after upload, shown in main card) ─────────────
+  // ── Research blurb ────────────────────────────────────────────────────────────
 
   async function loadResearch(applicantName, trademarkName) {
     const area = document.getElementById("researchArea");
@@ -596,28 +911,37 @@
       const data = await res.json();
       currentResearch = data;
 
-      if (data.blurb) {
-        let blurbHtml = esc(data.blurb);
-        if (data.trademark_url) {
-          const eu = esc(data.trademark_url);
-          blurbHtml = blurbHtml.includes(eu)
-            ? blurbHtml.replace(eu, `<a href="${eu}" target="_blank">${eu}</a>`)
-            : blurbHtml + ` <a href="${eu}" target="_blank">${eu}</a>`;
-        }
-        area.innerHTML = `
-          <div class="research-blurb">
-            <div class="lbl">Applicant &amp; trademark research</div>
-            ${blurbHtml}
+      let sectionsHtml = "";
+
+      if (data.applicant_blurb) {
+        const linkHtml = data.applicant_url
+          ? `<br><a href="${esc(data.applicant_url)}" target="_blank" rel="noopener" class="research-link">↗ Visit applicant website</a>`
+          : "";
+        sectionsHtml += `
+          <div class="research-section">
+            <div class="lbl">About the applicant</div>
+            ${esc(data.applicant_blurb)}${linkHtml}
           </div>`;
-      } else {
-        area.innerHTML = "";
       }
-    } catch (e) {
+
+      if (data.trademark_blurb) {
+        const linkHtml = data.trademark_url
+          ? `<br><a href="${esc(data.trademark_url)}" target="_blank" rel="noopener" class="research-link">↗ View trademark in use</a>`
+          : "";
+        sectionsHtml += `
+          <div class="research-section trademark-section">
+            <div class="lbl">Trademark in use</div>
+            ${esc(data.trademark_blurb)}${linkHtml}
+          </div>`;
+      }
+
+      area.innerHTML = sectionsHtml;
+    } catch(e) {
       area.innerHTML = "";
     }
   }
 
-  // ── Amendment suggestions (uses pre-loaded research context) ──────────────────
+  // ── Amendment suggestions ─────────────────────────────────────────────────────
 
   async function loadAmendments(term, niceClass, reason, businessContext) {
     const body = document.getElementById("panel-body");
@@ -631,83 +955,78 @@
       const res = await fetch("/api/suggest-amendments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          term, nice_class: niceClass, reason,
-          business_context: businessContext,
-        }),
+        body: JSON.stringify({ term, nice_class: niceClass, reason, business_context: businessContext }),
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       renderAmendments(body, data);
-    } catch (e) {
+    } catch(e) {
       body.innerHTML = `<div class="panel-error">Could not load suggestions: ${esc(String(e))}</div>`;
     }
   }
 
   function renderAmendments(container, data) {
+    const suggs = data.suggestions || [];
+    const approved   = suggs.filter(s => s.source && !s.source.toLowerCase().includes("constructed"));
+    const constructed = suggs.filter(s => s.source && s.source.toLowerCase().includes("constructed"));
+
+    const renderCards = items => items.map(s => `
+      <div class="suggestion-card">
+        <div class="card-actions">
+          <button class="use-btn" data-replacement="${esc(s.replacement)}">Use this</button>
+          <button class="copy-btn" onclick="copyTerm(this, ${JSON.stringify(esc(s.replacement))})">Copy</button>
+        </div>
+        <div class="replacement">${esc(s.replacement)}</div>
+        <div class="rationale">${esc(s.rationale)}</div>
+        <span class="source-tag">${esc(s.source)}</span>
+      </div>`).join("");
+
     let html = "";
 
-    // AI suggestions — split into tiers
-    if (data.suggestions && data.suggestions.length > 0) {
-      const tier1 = data.suggestions.filter(s => !s.tier || s.tier === 1);
-      const tier2 = data.suggestions.filter(s => s.tier === 2);
-
-      const renderCards = (items) => items.map(s => `
-        <div class="suggestion-card">
-          <button class="copy-btn" onclick="copyTerm(this, ${JSON.stringify(esc(s.replacement))})">Copy</button>
-          <div class="replacement">${esc(s.replacement)}</div>
-          <div class="rationale">${esc(s.rationale)}</div>
-          <span class="source-tag">${esc(s.source)}</span>
-        </div>`).join("");
-
-      html += `<div class="panel-section">
-        <div class="panel-section-label">${currentResearch && currentResearch.blurb ? "Best fits for this applicant" : "Proposed replacements"}</div>
-        ${renderCards(tier1.length ? tier1 : data.suggestions)}
-      </div>`;
-
-      if (tier2.length) {
-        html += `<div class="panel-section">
-          <div class="panel-section-label">Other options</div>
-          ${renderCards(tier2)}
-        </div>`;
-      }
+    if (approved.length > 0) {
+      html += `
+        <details class="sugg-group" open>
+          <summary class="sugg-group-header">
+            <span class="sugg-group-arrow">▶</span>
+            CIPO Pre-Approved G&amp;S Manual
+            <span class="sugg-count">${approved.length}</span>
+          </summary>
+          <div class="sugg-group-body">${renderCards(approved)}</div>
+        </details>`;
     }
 
-    // GSM matches
-    if (data.gsm_matches && data.gsm_matches.length > 0) {
-      html += `<div class="panel-section">
-        <div class="panel-section-label">All pre-approved G&amp;S Manual matches</div>
-        <ul class="gsm-list">`;
-      for (const m of data.gsm_matches.slice(0, 12)) {
-        html += `<li onclick="copyTerm(null, ${JSON.stringify(esc(m.term))}, true)">
-          <span class="gsm-term">${esc(m.term)}</span>
-          <span class="gsm-copy">click to copy</span>
-        </li>`;
-      }
-      html += `</ul></div>`;
+    if (constructed.length > 0) {
+      html += `
+        <details class="sugg-group">
+          <summary class="sugg-group-header">
+            <span class="sugg-group-arrow">▶</span>
+            Constructed per specificity guidelines
+            <span class="sugg-count">${constructed.length}</span>
+          </summary>
+          <div class="sugg-group-body">${renderCards(constructed)}</div>
+        </details>`;
+    }
+
+    if (!approved.length && !constructed.length) {
+      html = `<div style="font-size:0.83rem;color:#888;padding:12px 0">No suggestions found for this term.</div>`;
     }
 
     // Specificity guidance
     if (data.specificity_guidance && data.specificity_guidance.length > 0) {
-      html += `<div class="panel-section">
+      html += `<div class="panel-section" style="margin-top:4px">
         <div class="panel-section-label">Specificity guidance</div>`;
-      for (const g of data.specificity_guidance.slice(0, 3)) {
-        html += `<div style="font-size:0.8rem;color:#555;margin-bottom:8px;line-height:1.45;">
+      for (const g of data.specificity_guidance.slice(0, 4)) {
+        html += `<div style="font-size:0.79rem;color:#555;margin-bottom:8px;line-height:1.45;">
           <strong style="color:#1a1a2e">${esc(g.term)}</strong>: ${esc(g.guidance)}
         </div>`;
       }
       html += `</div>`;
     }
 
-    if (!html) {
-      html = `<div style="font-size:0.83rem;color:#888;padding:12px 0">No suggestions found for this term.</div>`;
-    }
-
     container.innerHTML = html;
   }
 
-  function copyTerm(btn, text, flash) {
-    // unescape HTML entities before copying
+  function copyTerm(btn, text) {
     const d = document.createElement("textarea");
     d.innerHTML = text;
     navigator.clipboard.writeText(d.value).catch(() => {});
@@ -715,10 +1034,6 @@
       btn.textContent = "Copied!";
       btn.classList.add("copied");
       setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1800);
-    } else if (flash) {
-      // briefly highlight the clicked GSM row
-      const active = document.activeElement;
-      if (active) active.blur();
     }
   }
 </script>

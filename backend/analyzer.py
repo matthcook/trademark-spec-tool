@@ -13,44 +13,41 @@ def research_context(applicant_name: str, trademark_name: str) -> dict:
     """
     Use Claude's built-in web search to research the applicant's business and
     find evidence of trademark use online.
-    Returns {"blurb": str | None, "trademark_url": str | None}.
-
-    The web_search_20250305 tool is executed server-side by Anthropic — no
-    client-side loop is required; the model searches and responds in one call.
+    Returns {applicant_blurb, applicant_url, trademark_blurb, trademark_url}.
     """
     if not applicant_name and not trademark_name:
-        return {"blurb": None, "trademark_url": None}
+        return {"applicant_blurb": None, "applicant_url": None, "trademark_blurb": None, "trademark_url": None}
 
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
     prompt = f"""You are assisting a Canadian trademark agent preparing an office action response.
 
 Search the web for "{applicant_name}" and the trademark "{trademark_name}". Your goal is to understand:
-1. What kind of business or entity "{applicant_name}" is — industry, what they make or sell
-2. Whether and how the trademark "{trademark_name}" is in active commercial use online
-3. If you find a website using the trademark, look at what SPECIFIC goods or services are sold or offered under it — product categories, types of services, etc.
+1. What kind of business or entity "{applicant_name}" is — industry, what they make or sell, their website
+2. Whether and how the trademark "{trademark_name}" is in active commercial use online, and what SPECIFIC goods or services are sold under it
 
 Return ONLY a JSON object — no markdown, no explanation, no other text:
 {{
-  "blurb": "3–5 sentences: describe the applicant's business, then describe specifically what the trademark is being used for on their website (e.g. 'The trademark is used on a website selling yoga pants, running shorts, and athletic accessories'), and include the URL",
+  "applicant_blurb": "2–3 sentences describing what {applicant_name} does, their industry, and key products or services",
+  "applicant_url": "the main URL for the applicant's website (e.g. homepage), or null if not found",
+  "trademark_blurb": "2–3 sentences describing specifically how the trademark '{trademark_name}' is being used online — what products or services it appears on, what the website sells under that mark",
   "trademark_url": "the most direct URL showing the trademark in use (homepage, product page, etc.), or null"
 }}"""
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=600,
+        max_tokens=800,
         tools=[{"type": "web_search_20250305", "name": "web_search"}],
         messages=[{"role": "user", "content": prompt}],
     )
 
-    # Concatenate all text blocks (the model may split its response)
     full_text = "".join(
         block.text for block in response.content
         if hasattr(block, "text") and block.text
     ).strip()
 
     if not full_text:
-        return {"blurb": None, "trademark_url": None}
+        return {"applicant_blurb": None, "applicant_url": None, "trademark_blurb": None, "trademark_url": None}
 
     if full_text.startswith("```"):
         full_text = full_text.split("```")[1]
