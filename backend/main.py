@@ -11,8 +11,10 @@ from dotenv import load_dotenv
 
 from doc_parser import parse_office_action, extract_document_debug
 from cipo import fetch_application
-from analyzer import analyze_office_action, generate_amendment_suggestions, research_context
-from cipo_resources import init_db, load_all, search_specificity, search_tem, search_gsm, search_gsm_fts, _is_boolean_query, get_metadata, resources_loaded, gsm_loaded, DB_PATH
+from analyzer import analyze_office_action, generate_amendment_suggestions, research_context, parse_spec_into_terms
+from cipo_resources import (init_db, load_all, search_specificity, search_tem, search_gsm,
+    search_gsm_fts, _is_boolean_query, get_metadata, resources_loaded, gsm_loaded, DB_PATH,
+    add_user_spec_terms, list_user_spec_sources, delete_user_spec_source, search_user_specs)
 
 load_dotenv()
 
@@ -26,21 +28,46 @@ app = FastAPI(
 @app.on_event("startup")
 async def startup_event():
     from cipo_resources import _rebuild_gsm_fts
+    from datetime import datetime, timedelta
+    import threading
+
     init_db()
+
+    def _bg_load():
+        load_all()
+
+    def _maybe_rebuild_fts():
+        import sqlite3 as _sq
+        conn = _sq.connect(DB_PATH)
+        count = conn.execute("SELECT COUNT(*) FROM gsm_fts").fetchone()[0]
+        conn.close()
+        if count == 0:
+            _rebuild_gsm_fts()
+
     if not resources_loaded():
-        import threading
-        threading.Thread(target=load_all, daemon=True).start()
-    elif gsm_loaded():
-        # Rebuild FTS5 index in background if it's empty (e.g. first run after update)
-        import threading
-        def _maybe_rebuild():
-            import sqlite3 as _sq
-            conn = _sq.connect(DB_PATH)
-            count = conn.execute("SELECT COUNT(*) FROM gsm_fts").fetchone()[0]
-            conn.close()
-            if count == 0:
-                _rebuild_gsm_fts()
-        threading.Thread(target=_maybe_rebuild, daemon=True).start()
+        threading.Thread(target=_bg_load, daemon=True).start()
+    else:
+        # Auto-refresh if any resource is older than 30 days
+        meta = get_metadata()
+        stale = False
+        for _key in ("sggsm", "gsm"):
+            date_str = meta.get(_key)
+            if not date_str:
+                stale = True
+                break
+            try:
+                age = datetime.utcnow() - datetime.fromisoformat(date_str)
+                if age > timedelta(days=30):
+                    stale = True
+                    break
+            except Exception:
+                stale = True
+                break
+        if stale:
+            print("CIPO resources are stale (>30 days) — refreshing in background.")
+            threading.Thread(target=_bg_load, daemon=True).start()
+        elif gsm_loaded():
+            threading.Thread(target=_maybe_rebuild_fts, daemon=True).start()
 
 app.add_middleware(
     CORSMiddleware,
@@ -168,13 +195,22 @@ async def parse_objection(file: UploadFile = File(...)):
 @app.get("/api/resources/status")
 def resource_status():
     """Check whether CIPO reference resources are loaded."""
+    from datetime import datetime, timedelta
     meta = get_metadata()
+    gsm_date = meta.get("gsm")
+    stale = False
+    if gsm_date:
+        try:
+            stale = (datetime.utcnow() - datetime.fromisoformat(gsm_date)) > timedelta(days=30)
+        except Exception:
+            stale = True
     return {
         "loaded": resources_loaded(),
         "sggsm_downloaded": meta.get("sggsm"),
         "tem_downloaded": meta.get("tem"),
         "gsm_loaded": gsm_loaded(),
-        "gsm_downloaded": meta.get("gsm"),
+        "gsm_downloaded": gsm_date,
+        "gsm_stale": stale,
     }
 
 
@@ -379,6 +415,15 @@ async def suggest_amendments(body: AmendmentRequest):
         suggestions = []
         suggestion_error = str(exc)
 
+    # Search personal spec library for matching accepted terms
+    user_spec_matches = []
+    for kw in _gsm_keywords(body.term)[:3]:
+        for row in search_user_specs(kw, body.nice_class or None):
+            if not any(r["term"].lower() == row["term"].lower() for r in user_spec_matches):
+                user_spec_matches.append(row)
+        if len(user_spec_matches) >= 30:
+            break
+
     return {
         "term": body.term,
         "nice_class": body.nice_class,
@@ -386,6 +431,7 @@ async def suggest_amendments(body: AmendmentRequest):
         "specificity_guidance": sg,
         "suggestions": suggestions,
         "suggestion_error": suggestion_error,
+        "user_spec_matches": user_spec_matches[:30],
     }
 
 
@@ -407,6 +453,69 @@ async def debug_parse(file: UploadFile = File(...)):
         result["extracted_trademark"] = parsed.trademark_name
         result["extracted_applicant"] = parsed.applicant_name
         return result
+    finally:
+        os.unlink(tmp_path)
+
+
+# ── Personal spec library endpoints ───────────────────────────────────────────
+
+@app.get("/api/user-specs")
+def get_user_specs():
+    """List all uploaded reference spec sources."""
+    return {"sources": list_user_spec_sources()}
+
+
+@app.delete("/api/user-specs/{source_name:path}")
+def delete_user_spec(source_name: str):
+    """Remove a reference spec source."""
+    delete_user_spec_source(source_name)
+    return {"deleted": source_name}
+
+
+class UserSpecTextRequest(BaseModel):
+    source_name: str
+    text: str
+
+
+@app.post("/api/user-specs/text")
+async def upload_user_spec_text(body: UserSpecTextRequest):
+    """Parse and index a pasted specification text into the personal library."""
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not configured.")
+    if not body.text.strip():
+        raise HTTPException(status_code=400, detail="No text provided.")
+    import asyncio
+    try:
+        terms = await asyncio.to_thread(parse_spec_into_terms, body.text)
+        count = add_user_spec_terms(body.source_name, terms)
+        return {"source_name": body.source_name, "terms_indexed": count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Parsing failed: {str(e)}")
+
+
+@app.post("/api/user-specs/upload")
+async def upload_user_spec_file(file: UploadFile = File(...)):
+    """Parse and index a .docx reference spec file into the personal library."""
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not configured.")
+    if not file.filename.endswith(".docx"):
+        raise HTTPException(status_code=400, detail="Please upload a .docx file.")
+
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+        tmp.write(await file.read())
+        tmp_path = tmp.name
+
+    try:
+        import asyncio
+        from doc_parser import parse_office_action as _parse
+        # Extract all text from the document
+        doc_text = _parse(tmp_path).full_text
+        terms = await asyncio.to_thread(parse_spec_into_terms, doc_text)
+        source_name = file.filename.rsplit(".", 1)[0]
+        count = add_user_spec_terms(source_name, terms)
+        return {"source_name": source_name, "terms_indexed": count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Parsing failed: {str(e)}")
     finally:
         os.unlink(tmp_path)
 

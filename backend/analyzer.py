@@ -202,6 +202,63 @@ Return a JSON array only — no markdown, no explanation:
     return json.loads(raw)
 
 
+# ── Personal spec library parsing ────────────────────────────────────────────
+
+def parse_spec_into_terms(text: str) -> list[dict]:
+    """
+    Use Claude to parse a trademark specification (plain text or extracted from
+    a Word doc) into a flat list of {nice_class, term} dicts.
+    Each term is one individual good or service as it would appear in the spec.
+    """
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    prompt = f"""Parse this trademark specification into individual goods and services.
+
+The specification text:
+{text[:6000]}
+
+Return a JSON array of objects — no markdown, no explanation:
+[
+  {{"nice_class": "09", "term": "downloadable computer software for fleet tracking"}},
+  {{"nice_class": "35", "term": "retail store services featuring computer hardware"}}
+]
+
+Rules:
+- Split the specification by Nice class (look for "Class XX:" headers or similar)
+- Within each class, split on semicolons to get individual terms
+- Clean up each term: trim whitespace, remove trailing punctuation
+- Preserve the full term text exactly as written — do not summarize or shorten
+- nice_class should be a zero-padded two-digit string, e.g. "09" not "9"
+- Return every term, including those that appear acceptable (not objected)
+- If the text has multiple applications, parse all of them"""
+
+    message = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=4000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    raw = ""
+    for block in message.content:
+        if hasattr(block, "text") and block.text:
+            raw = block.text.strip()
+            break
+
+    if not raw:
+        return []
+
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    raw = raw.strip()
+
+    if not raw.startswith("["):
+        m = re.search(r'\[[\s\S]*\]', raw)
+        raw = m.group(0) if m else "[]"
+
+    return json.loads(raw)
+
+
 # ── Office action analysis ─────────────────────────────────────────────────────
 
 def analyze_office_action(parsed_doc, cipo_app=None) -> dict:

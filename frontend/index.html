@@ -585,6 +585,10 @@
           <div class="lbl">Applicant</div>
           <div class="val" id="metaApplicant">—</div>
         </div>
+        <div class="meta-item">
+          <div class="lbl">Other apps</div>
+          <div class="val" id="metaOwnerSearch">—</div>
+        </div>
       </div>
 
       <div class="convention-box">
@@ -596,16 +600,68 @@
     </div>
 
     <div class="card">
-      <h2>Specification</h2>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
+        <h2 style="margin-bottom:0">Specification</h2>
+        <button id="exportEmailBtn" onclick="exportForEmail()"
+          style="font-size:0.78rem;padding:5px 14px;border:1px solid #c0ccdf;border-radius:6px;background:#f4f7ff;color:#4a6fa5;cursor:pointer;font-weight:600">
+          Copy for email ✉
+        </button>
+      </div>
       <p class="sub" style="margin-bottom:20px">
         Classes with objections are expanded. Click any highlighted term to view amendment suggestions. You can also type directly in the specification — additions appear in red, deletions in blue strikethrough.
       </p>
       <div id="specDoc"></div>
     </div>
 
+    <div class="card" id="specLibraryCard">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
+        <h2 style="margin-bottom:0">Reference Spec Library</h2>
+        <div style="display:flex;gap:8px">
+          <button onclick="openLibraryUploadModal('file')"
+            style="font-size:0.78rem;padding:5px 14px;border:1px solid #c0ccdf;border-radius:6px;background:#f4f7ff;color:#4a6fa5;cursor:pointer;font-weight:600">
+            Upload .docx
+          </button>
+          <button onclick="openLibraryUploadModal('text')"
+            style="font-size:0.78rem;padding:5px 14px;border:1px solid #c0ccdf;border-radius:6px;background:#f4f7ff;color:#4a6fa5;cursor:pointer;font-weight:600">
+            Paste spec text
+          </button>
+        </div>
+      </div>
+      <p class="sub" style="margin-bottom:14px">
+        Upload previously accepted specifications (your own files or client-specific collections). Matching terms appear in the amendment panel alongside CIPO pre-approved options.
+      </p>
+      <div id="librarySourceList"><span style="font-size:0.83rem;color:#aaa">No reference specs uploaded yet.</span></div>
+    </div>
+
   </div>
 
 </main>
+
+<!-- Reference library upload modal -->
+<div id="libraryUploadModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:10px;padding:28px 32px;max-width:660px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,0.18)">
+    <h3 style="margin:0 0 8px;font-size:1.1rem" id="libraryModalTitle">Add to Reference Library</h3>
+    <p style="margin:0 0 12px;font-size:0.87rem;color:#555" id="libraryModalDesc"></p>
+
+    <div id="libraryFileArea" style="display:none">
+      <input type="file" id="libraryFileInput" accept=".docx"
+        style="font-size:0.85rem;width:100%;border:1px solid #ccc;border-radius:6px;padding:8px">
+    </div>
+    <div id="libraryTextArea" style="display:none">
+      <input type="text" id="librarySourceName" placeholder="Give this collection a name (e.g. Apple Specs)"
+        style="width:100%;box-sizing:border-box;font-size:0.85rem;border:1px solid #ccc;border-radius:6px;padding:8px;margin-bottom:8px">
+      <textarea id="librarySpecText" rows="12"
+        style="width:100%;box-sizing:border-box;font-size:0.85rem;font-family:monospace;border:1px solid #ccc;border-radius:6px;padding:10px;resize:vertical"
+        placeholder="Paste the specification text here...&#10;Class 9: Computer software; downloadable software...&#10;Class 35: Retail store services..."></textarea>
+    </div>
+
+    <div style="margin-top:14px;display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeLibraryUploadModal()" style="padding:8px 18px;border:1px solid #ccc;border-radius:6px;background:#f5f5f5;cursor:pointer">Cancel</button>
+      <button onclick="submitLibraryUpload()" id="libraryUploadBtn" style="padding:8px 18px;border:none;border-radius:6px;background:#2563eb;color:#fff;font-weight:600;cursor:pointer">Add to library</button>
+    </div>
+    <div id="libraryUploadStatus" style="margin-top:10px;font-size:0.85rem;color:#555"></div>
+  </div>
+</div>
 
 <script>
   const fileInput = document.getElementById("fileInput");
@@ -924,6 +980,15 @@
       metaAppEl.textContent = "—";
     }
     document.getElementById("metaIR").textContent       = data.ir_number || "—";
+
+    // Feature 4 — owner search link
+    const ownerEl = document.getElementById("metaOwnerSearch");
+    if (a.applicant_name) {
+      const ownerUrl = `https://ised-isde.canada.ca/cipo/trademark-search/srch?searchfield1=ownname&textfield1=${encodeURIComponent(a.applicant_name)}&lang=eng`;
+      ownerEl.innerHTML = `<a href="${ownerUrl}" target="_blank" rel="noopener" style="font-size:0.85rem;color:#4a6fa5;text-decoration:none">Search on CIPO →</a>`;
+    } else {
+      ownerEl.textContent = "—";
+    }
     document.getElementById("metaExaminer").textContent = a.examiner_name || "—";
     document.getElementById("metaTrademark").textContent = a.trademark_name || "—";
     document.getElementById("metaApplicant").textContent = a.applicant_name || "—";
@@ -1128,7 +1193,39 @@
       html += `<div style="font-size:0.83rem;color:#888;padding:8px 0 12px">No AI recommendations found — use the browse panel below.</div>`;
     }
 
-    // Section 2 — Live searchable list of ALL pre-approved terms
+    // Section 2 — Personal spec library matches
+    const userMatches = data.user_spec_matches || [];
+    if (userMatches.length > 0) {
+      const bySource = {};
+      userMatches.forEach(m => {
+        if (!bySource[m.source_name]) bySource[m.source_name] = [];
+        bySource[m.source_name].push(m);
+      });
+      let libCards = "";
+      Object.entries(bySource).forEach(([src, items]) => {
+        libCards += `<div style="font-size:0.68rem;font-weight:700;color:#6aaa88;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 4px">${esc(src)}</div>`;
+        libCards += items.map(m => `
+          <div class="suggestion-card" style="border-color:#c8e6c9;background:#f6fbf7">
+            <div class="card-actions">
+              <button class="use-btn" data-replacement="${esc(m.term)}">Use this</button>
+              <button class="copy-btn" onclick="copyTerm(this, ${JSON.stringify(esc(m.term))})">Copy</button>
+            </div>
+            <div class="replacement">${esc(m.term)}</div>
+            <span class="source-tag" style="background:#e6f4ea;color:#2e7d32">${esc(m.source_name)}</span>
+          </div>`).join("");
+      });
+      html += `
+        <details class="sugg-group" open>
+          <summary class="sugg-group-header" style="background:#f2fbf4">
+            <span class="sugg-group-arrow">▶</span>
+            From your reference library
+            <span class="sugg-count" style="background:#5b9a6b">${userMatches.length}</span>
+          </summary>
+          <div class="sugg-group-body">${libCards}</div>
+        </details>`;
+    }
+
+    // Section 4 — Live searchable list of ALL pre-approved terms
     const clsNum = data.nice_class ? String(parseInt(data.nice_class)) : "";
     html += `
       <details class="sugg-group" open>
@@ -1154,7 +1251,7 @@
         </div>
       </details>`;
 
-    // Section 3 — Specificity guidance
+    // Section 5 — Specificity guidance
     if (data.specificity_guidance && data.specificity_guidance.length > 0) {
       html += `<details class="sugg-group">
         <summary class="sugg-group-header">
@@ -1245,6 +1342,100 @@
     }
   }
 
+  // ── Email export ──────────────────────────────────────────────────────────────
+
+  function exportForEmail() {
+    const btn = document.getElementById("exportEmailBtn");
+    const classes = document.querySelectorAll(".class-details");
+    if (!classes.length) return;
+
+    // Build inline-styled HTML suitable for pasting into Outlook / Gmail
+    let bodyHtml = `<div style="font-family:Georgia,serif;font-size:10pt;line-height:1.8;color:#222">`;
+
+    classes.forEach(details => {
+      const niceClass = details.dataset.niceClass;
+      const summaryEl = details.querySelector(".class-type");
+      const specDiv   = details.querySelector(".spec-text");
+      if (!specDiv) return;
+
+      const typeLabel = summaryEl ? summaryEl.textContent.trim() : "";
+      bodyHtml += `<p style="margin:14px 0 4px"><strong>Class ${esc(niceClass)}</strong>`
+                + (typeLabel ? ` <span style="color:#555;font-weight:normal">(${esc(typeLabel)})</span>` : "")
+                + `</p>`;
+
+      // Walk child nodes, converting tracked-change spans to inline styles
+      bodyHtml += `<p style="margin:0 0 10px;padding-left:14px">`;
+      bodyHtml += _nodeToEmailHtml(specDiv);
+      bodyHtml += `</p>`;
+    });
+
+    bodyHtml += `</div>`;
+
+    // Try rich clipboard (HTML); fall back to plain text
+    if (navigator.clipboard && window.ClipboardItem) {
+      const plainText = classes.length
+        ? Array.from(classes).map(d => {
+            const nc = d.dataset.niceClass;
+            const spec = d.querySelector(".spec-text");
+            return `Class ${nc}: ${spec ? spec.innerText.replace(/\s+/g," ").trim() : ""}`;
+          }).join("\n\n")
+        : "";
+      const item = new ClipboardItem({
+        "text/html":  new Blob([bodyHtml],  { type: "text/html"  }),
+        "text/plain": new Blob([plainText], { type: "text/plain" }),
+      });
+      navigator.clipboard.write([item]).then(() => {
+        btn.textContent = "Copied! ✓";
+        btn.style.background = "#e6f4ea";
+        btn.style.borderColor = "#a5d6a7";
+        btn.style.color = "#2e7d32";
+        setTimeout(() => {
+          btn.textContent = "Copy for email ✉";
+          btn.style.background = "";
+          btn.style.borderColor = "";
+          btn.style.color = "";
+        }, 2500);
+      }).catch(() => _exportFallback(bodyHtml));
+    } else {
+      _exportFallback(bodyHtml);
+    }
+  }
+
+  function _nodeToEmailHtml(el) {
+    let html = "";
+    el.childNodes.forEach(node => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        html += esc(node.textContent);
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        if (node.classList.contains("tc-del")) {
+          // Blue strikethrough = deleted text
+          html += `<span style="text-decoration:line-through;color:#1d4ed8">${esc(node.textContent)}</span>`;
+        } else if (node.classList.contains("tc-ins")) {
+          // Red = inserted text
+          html += `<span style="color:#dc2626;font-weight:500">${esc(node.textContent)}</span>`;
+        } else if (node.classList.contains("objected-term")) {
+          // Highlighted term — just render plain (no highlighting in email)
+          html += esc(node.textContent);
+        } else {
+          html += _nodeToEmailHtml(node);
+        }
+      }
+    });
+    return html;
+  }
+
+  function _exportFallback(htmlStr) {
+    // Open a small window so the user can manually copy
+    const w = window.open("", "_blank", "width=700,height=500,scrollbars=yes");
+    w.document.write(`<!DOCTYPE html><html><head><title>Copy for email</title></head><body>
+      <p style="font-family:sans-serif;font-size:13px;color:#555;margin-bottom:12px">
+        Select all (Ctrl+A / Cmd+A) and copy, then paste into your email.
+      </p>
+      ${htmlStr}
+    </body></html>`);
+    w.document.close();
+  }
+
   function copyTerm(btn, text) {
     const d = document.createElement("textarea");
     d.innerHTML = text;
@@ -1272,6 +1463,102 @@
     <div id="pasteSpecStatus" style="margin-top:10px;font-size:0.85rem;color:#555"></div>
   </div>
 </div>
+
+<script>
+  // ── Reference spec library ─────────────────────────────────────────────────
+
+  let _libraryMode = "text"; // "file" or "text"
+
+  function openLibraryUploadModal(mode) {
+    _libraryMode = mode;
+    const m = document.getElementById("libraryUploadModal");
+    m.style.display = "flex";
+    document.getElementById("libraryUploadStatus").textContent = "";
+    document.getElementById("libraryUploadBtn").disabled = false;
+    document.getElementById("libraryFileArea").style.display = mode === "file" ? "block" : "none";
+    document.getElementById("libraryTextArea").style.display = mode === "text" ? "block" : "none";
+    document.getElementById("libraryModalDesc").textContent = mode === "file"
+      ? "Upload a Word document containing previously accepted specifications. The tool will parse every class and term and add them to your library."
+      : "Paste specification text below. Give the collection a name so you can identify it later.";
+    if (mode === "text") {
+      document.getElementById("librarySpecText").value = "";
+      document.getElementById("librarySourceName").value = "";
+    }
+  }
+
+  function closeLibraryUploadModal() {
+    document.getElementById("libraryUploadModal").style.display = "none";
+  }
+
+  async function submitLibraryUpload() {
+    const btn    = document.getElementById("libraryUploadBtn");
+    const status = document.getElementById("libraryUploadStatus");
+    btn.disabled = true;
+    status.textContent = "Parsing specification… this may take 20–30 seconds.";
+
+    try {
+      let res;
+      if (_libraryMode === "file") {
+        const file = document.getElementById("libraryFileInput").files[0];
+        if (!file) { status.textContent = "Please select a file."; btn.disabled = false; return; }
+        const fd = new FormData();
+        fd.append("file", file);
+        res = await fetch("/api/user-specs/upload", { method: "POST", body: fd });
+      } else {
+        const text = document.getElementById("librarySpecText").value.trim();
+        const name = document.getElementById("librarySourceName").value.trim() || "Pasted spec";
+        if (!text) { status.textContent = "Please paste some text first."; btn.disabled = false; return; }
+        res = await fetch("/api/user-specs/text", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ source_name: name, text }),
+        });
+      }
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        status.textContent = "Error: " + (e.detail || res.status);
+        return;
+      }
+      const data = await res.json();
+      status.textContent = `✓ Indexed ${data.terms_indexed} terms from "${data.source_name}"`;
+      await loadLibrarySources();
+      setTimeout(closeLibraryUploadModal, 1800);
+    } catch(e) {
+      status.textContent = "Error: " + (e.message || e);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function loadLibrarySources() {
+    try {
+      const res  = await fetch("/api/user-specs");
+      const data = await res.json();
+      const list = document.getElementById("librarySourceList");
+      if (!data.sources || data.sources.length === 0) {
+        list.innerHTML = `<span style="font-size:0.83rem;color:#aaa">No reference specs uploaded yet.</span>`;
+        return;
+      }
+      list.innerHTML = data.sources.map(s => `
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f0f4f8">
+          <span style="flex:1;font-size:0.88rem;font-weight:500">${esc(s.source_name)}</span>
+          <span style="font-size:0.75rem;color:#999">${s.term_count} terms</span>
+          <span style="font-size:0.72rem;color:#bbb">${(s.uploaded_at || "").slice(0,10)}</span>
+          <button onclick="deleteLibrarySource(${JSON.stringify(esc(s.source_name))})"
+            style="font-size:0.7rem;padding:2px 8px;border:1px solid #fca5a5;border-radius:4px;background:#fff5f5;color:#c0392b;cursor:pointer">Remove</button>
+        </div>`).join("");
+    } catch(e) { /* library is optional — fail silently */ }
+  }
+
+  async function deleteLibrarySource(name) {
+    if (!confirm(`Remove "${name}" from the library?`)) return;
+    await fetch(`/api/user-specs/${encodeURIComponent(name)}`, { method: "DELETE" });
+    await loadLibrarySources();
+  }
+
+  // Load sources on page load (library persists across sessions)
+  loadLibrarySources();
+</script>
 
 <script>
   function openPasteSpecModal() {

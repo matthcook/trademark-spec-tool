@@ -70,6 +70,23 @@ def init_db():
             notes      UNINDEXED,
             tokenize='unicode61 remove_diacritics 1'
         );
+
+        CREATE TABLE IF NOT EXISTS user_spec_terms (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            term        TEXT NOT NULL,
+            nice_class  TEXT NOT NULL,
+            source_name TEXT NOT NULL,
+            created_at  TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_ust_class  ON user_spec_terms(nice_class);
+        CREATE INDEX IF NOT EXISTS idx_ust_source ON user_spec_terms(source_name);
+
+        CREATE VIRTUAL TABLE IF NOT EXISTS user_spec_fts USING fts5(
+            term,
+            nice_class  UNINDEXED,
+            source_name UNINDEXED,
+            tokenize='unicode61 remove_diacritics 1'
+        );
     """)
     # Add columns that may be missing from an older gsm_terms schema
     existing = {row[1] for row in conn.execute("PRAGMA table_info(gsm_terms)")}
@@ -429,3 +446,112 @@ def resources_loaded() -> bool:
     count = conn.execute("SELECT COUNT(*) FROM specificity_guidelines").fetchone()[0]
     conn.close()
     return count > 0
+
+
+# ── Personal spec library ──────────────────────────────────────────────────────
+
+def add_user_spec_terms(source_name: str, terms: list[dict]) -> int:
+    """
+    Store a parsed list of {nice_class, term} dicts under source_name.
+    Replaces any existing terms for that source.
+    Returns the number of terms inserted.
+    """
+    from datetime import datetime
+    conn = get_db()
+    conn.execute("DELETE FROM user_spec_terms WHERE source_name = ?", (source_name,))
+    conn.execute("DELETE FROM user_spec_fts  WHERE source_name = ?", (source_name,))
+    now = datetime.utcnow().isoformat()
+    rows = [(t["term"], t.get("nice_class", ""), source_name, now) for t in terms if t.get("term")]
+    conn.executemany(
+        "INSERT INTO user_spec_terms (term, nice_class, source_name, created_at) VALUES (?,?,?,?)",
+        rows,
+    )
+    # Sync FTS5
+    conn.execute("""
+        INSERT INTO user_spec_fts(rowid, term, nice_class, source_name)
+        SELECT id, term, nice_class, source_name FROM user_spec_terms
+        WHERE source_name = ?
+    """, (source_name,))
+    conn.commit()
+    conn.close()
+    return len(rows)
+
+
+def list_user_spec_sources() -> list[dict]:
+    """Return all uploaded reference sources with term counts."""
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT source_name, COUNT(*) as term_count, MAX(created_at) as uploaded_at
+        FROM user_spec_terms GROUP BY source_name ORDER BY uploaded_at DESC
+    """).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def delete_user_spec_source(source_name: str):
+    """Remove a reference source and all its terms."""
+    conn = get_db()
+    conn.execute("DELETE FROM user_spec_terms WHERE source_name = ?", (source_name,))
+    conn.execute("DELETE FROM user_spec_fts  WHERE source_name = ?", (source_name,))
+    conn.commit()
+    conn.close()
+
+
+def search_user_specs(query: str, nice_class: str = None, limit: int = 50) -> list[dict]:
+    """Search the personal spec library. Supports boolean FTS5 syntax."""
+    conn = get_db()
+    try:
+        count = conn.execute("SELECT COUNT(*) FROM user_spec_fts").fetchone()[0]
+    except Exception:
+        count = 0
+    conn.close()
+    if count == 0:
+        return []
+
+    fts_query = _prep_fts_query(query) if _is_boolean_query(query) else query
+    conn = get_db()
+    try:
+        if nice_class:
+            cls = nice_class.zfill(2)
+            rows = conn.execute(
+                """SELECT nice_class, term, source_name FROM user_spec_fts
+                   WHERE user_spec_fts MATCH ? AND nice_class = ?
+                   ORDER BY rank LIMIT ?""",
+                (fts_query, cls, limit),
+            ).fetchall()
+            if len(rows) < 10:
+                extra = conn.execute(
+                    """SELECT nice_class, term, source_name FROM user_spec_fts
+                       WHERE user_spec_fts MATCH ? AND nice_class != ?
+                       ORDER BY rank LIMIT ?""",
+                    (fts_query, cls, limit - len(rows)),
+                ).fetchall()
+                rows = list(rows) + list(extra)
+        else:
+            rows = conn.execute(
+                """SELECT nice_class, term, source_name FROM user_spec_fts
+                   WHERE user_spec_fts MATCH ? ORDER BY rank LIMIT ?""",
+                (fts_query, limit),
+            ).fetchall()
+        conn.close()
+        return [{"nice_class": r[0], "term": r[1], "source_name": r[2]} for r in rows]
+    except Exception:
+        conn.close()
+        # Fall back to LIKE
+        clean = re.sub(r'["\(\)\*]', ' ', query).strip()
+        conn2 = get_db()
+        like = f"%{clean.lower()}%"
+        if nice_class:
+            cls = nice_class.zfill(2)
+            rows2 = conn2.execute(
+                """SELECT nice_class, term, source_name FROM user_spec_terms
+                   WHERE lower(term) LIKE ? AND nice_class = ? LIMIT ?""",
+                (like, cls, limit),
+            ).fetchall()
+        else:
+            rows2 = conn2.execute(
+                "SELECT nice_class, term, source_name FROM user_spec_terms WHERE lower(term) LIKE ? LIMIT ?",
+                (like, limit),
+            ).fetchall()
+        conn2.close()
+        return [{"nice_class": r[0], "term": r[1], "source_name": r[2]} for r in rows2]
