@@ -22,16 +22,22 @@ def research_context(applicant_name: str, trademark_name: str) -> dict:
 
     prompt = f"""You are assisting a Canadian trademark agent preparing an office action response.
 
-Search the web for "{applicant_name}" and the trademark "{trademark_name}". Your goal is to understand:
-1. What kind of business or entity "{applicant_name}" is — industry, what they make or sell, their website
-2. Whether and how the trademark "{trademark_name}" is in active commercial use online, and what SPECIFIC goods or services are sold under it
+Search the web for the applicant "{applicant_name}" and their trademark "{trademark_name}".
+
+Task 1 — Applicant research:
+Search for "{applicant_name}" to find their website and understand their business. Look for their homepage, about page, LinkedIn, or other authoritative sources.
+
+Task 2 — Trademark use by THIS applicant only:
+Search specifically for use of "{trademark_name}" BY "{applicant_name}" — for example by searching for both names together. You are looking for evidence that {applicant_name} uses "{trademark_name}" as a brand name on products or services. Do NOT report use of "{trademark_name}" by unrelated third parties. Do NOT guess or construct a URL like "{trademark_name.lower().replace(' ', '')}.com" — only return a URL you actually found in search results that shows {applicant_name} using "{trademark_name}".
+
+If you cannot find any evidence that {applicant_name} uses "{trademark_name}" online, say so explicitly in trademark_blurb and set trademark_url to null.
 
 Return ONLY a JSON object — no markdown, no explanation, no other text:
 {{
   "applicant_blurb": "2–3 sentences describing what {applicant_name} does, their industry, and key products or services",
-  "applicant_url": "the main URL for the applicant's website (e.g. homepage), or null if not found",
-  "trademark_blurb": "2–3 sentences describing specifically how the trademark '{trademark_name}' is being used online — what products or services it appears on, what the website sells under that mark",
-  "trademark_url": "the most direct URL showing the trademark in use (homepage, product page, etc.), or null"
+  "applicant_url": "URL of the applicant's own website found in search results, or null if not found",
+  "trademark_blurb": "2–3 sentences describing how {applicant_name} uses '{trademark_name}' online, with specific goods/services — OR a clear statement that no online use by {applicant_name} was found",
+  "trademark_url": "a URL you actually found showing {applicant_name} using '{trademark_name}', or null"
 }}"""
 
     _empty = {"applicant_blurb": None, "applicant_url": None, "trademark_blurb": None, "trademark_url": None}
