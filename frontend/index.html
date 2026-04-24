@@ -434,6 +434,20 @@
     .use-btn:hover { background: #2e2e50; }
     .use-btn.applied { background: #2e7d32; }
 
+    .namely-btn {
+      background: none;
+      color: #1a1a2e;
+      border: 1px solid #1a1a2e;
+      border-radius: 5px;
+      font-size: 0.7rem;
+      padding: 3px 9px;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+      white-space: nowrap;
+    }
+    .namely-btn:hover { background: #1a1a2e; color: #fff; }
+    .namely-btn.applied { background: #2e7d32; color: #fff; border-color: #2e7d32; }
+
     .copy-btn {
       background: none;
       border: 1px solid #c0ccdf;
@@ -504,7 +518,7 @@
       flex-shrink: 0;
     }
     .gsm-item-actions { display: flex; gap: 3px; flex-shrink: 0; }
-    .gsm-item-actions .use-btn  { padding: 2px 6px; font-size: 0.67rem; }
+    .gsm-item-actions .use-btn, .gsm-item-actions .namely-btn { padding: 2px 6px; font-size: 0.67rem; }
     .gsm-item-actions .copy-btn { padding: 2px 6px; font-size: 0.67rem; }
     .gsm-status {
       padding: 12px 8px;
@@ -1049,14 +1063,19 @@
 
   // "Use this" button
   document.addEventListener("click", e => {
-    const btn = e.target.closest(".use-btn");
+    const btn = e.target.closest(".use-btn, .namely-btn");
     if (!btn) return;
-    const replacement = btn.dataset.replacement;
-    if (panelState.niceClass && panelState.term && replacement) {
-      applyTrackedChange(panelState.niceClass, panelState.term, replacement);
+    const isNamely = btn.classList.contains("namely-btn");
+    const baseReplacement = btn.dataset.replacement;
+    if (panelState.niceClass && panelState.term && baseReplacement) {
+      const finalReplacement = isNamely
+        ? `${panelState.term}, namely, ${baseReplacement}`
+        : baseReplacement;
+      applyTrackedChange(panelState.niceClass, panelState.term, finalReplacement);
       btn.textContent = "Applied!";
       btn.classList.add("applied");
-      setTimeout(() => { btn.textContent = "Use this"; btn.classList.remove("applied"); }, 2500);
+      const resetLabel = isNamely ? "+ Namely" : "Replace";
+      setTimeout(() => { btn.textContent = resetLabel; btn.classList.remove("applied"); }, 2500);
     }
   });
 
@@ -1253,7 +1272,8 @@
     const renderCards = items => items.map(s => `
       <div class="suggestion-card">
         <div class="card-actions">
-          <button class="use-btn" data-replacement="${esc(s.replacement)}">Use this</button>
+          <button class="use-btn" data-replacement="${esc(s.replacement)}">Replace</button>
+          <button class="namely-btn" data-replacement="${esc(s.replacement)}">+ Namely</button>
           <button class="copy-btn" onclick="copyTerm(this, ${JSON.stringify(esc(s.replacement))})">Copy</button>
         </div>
         <div class="replacement">${esc(s.replacement)}</div>
@@ -1304,7 +1324,8 @@
         libCards += items.map(m => `
           <div class="suggestion-card" style="border-color:#c8e6c9;background:#f6fbf7">
             <div class="card-actions">
-              <button class="use-btn" data-replacement="${esc(m.term)}">Use this</button>
+              <button class="use-btn" data-replacement="${esc(m.term)}">Replace</button>
+              <button class="namely-btn" data-replacement="${esc(m.term)}">+ Namely</button>
               <button class="copy-btn" onclick="copyTerm(this, ${JSON.stringify(esc(m.term))})">Copy</button>
             </div>
             <div class="replacement">${esc(m.term)}</div>
@@ -1423,7 +1444,8 @@
           <span class="gsm-term-text">${esc(m.term)}</span>
           ${clsBadge}
           <div class="gsm-item-actions">
-            <button class="use-btn" data-replacement="${esc(m.term)}">Use</button>
+            <button class="use-btn" data-replacement="${esc(m.term)}">Replace</button>
+            <button class="namely-btn" data-replacement="${esc(m.term)}">+ Namely</button>
             <button class="copy-btn" onclick="copyTerm(this, ${JSON.stringify(esc(m.term))})">Copy</button>
           </div>
         </div>`;
