@@ -916,7 +916,13 @@
     currentAnalysis = a;
     currentResearch = null;
 
-    document.getElementById("metaApp").textContent      = a.application_number || "—";
+    const metaAppEl = document.getElementById("metaApp");
+    if (a.application_number) {
+      const cipoUrl = `https://ised-isde.canada.ca/cipo/trademark-search/${encodeURIComponent(a.application_number)}?lang=eng`;
+      metaAppEl.innerHTML = `${esc(a.application_number)}<a href="${cipoUrl}" target="_blank" rel="noopener" style="font-size:0.72rem;color:#4a6fa5;text-decoration:none;font-weight:400;display:block;margin-top:2px">View on CIPO →</a>`;
+    } else {
+      metaAppEl.textContent = "—";
+    }
     document.getElementById("metaIR").textContent       = data.ir_number || "—";
     document.getElementById("metaExaminer").textContent = a.examiner_name || "—";
     document.getElementById("metaTrademark").textContent = a.trademark_name || "—";
@@ -1038,9 +1044,9 @@
           </div>`;
       }
 
-      area.innerHTML = sectionsHtml;
+      area.innerHTML = sectionsHtml || `<div style="margin-top:12px;font-size:0.8rem;color:#aaa;padding:6px 0">Research returned no results — CIPO web search may be temporarily unavailable.</div>`;
     } catch(e) {
-      area.innerHTML = "";
+      area.innerHTML = `<div style="margin-top:12px;font-size:0.8rem;color:#c0392b;padding:6px 0">Research unavailable: ${esc(e && e.message ? e.message : String(e))}</div>`;
     }
   }
 
@@ -1070,8 +1076,8 @@
 
   function renderAmendments(container, data) {
     const suggs = data.suggestions || [];
-    const approved    = suggs.filter(s => s.source && !s.source.toLowerCase().includes("constructed"));
-    const constructed = suggs.filter(s => s.source &&  s.source.toLowerCase().includes("constructed"));
+    const approved    = suggs.filter(s => !(s.source || "").toLowerCase().includes("constructed"));
+    const constructed = suggs.filter(s =>  (s.source || "").toLowerCase().includes("constructed"));
 
     const renderCards = items => items.map(s => `
       <div class="suggestion-card">
@@ -1123,8 +1129,12 @@
           <span class="sugg-count" id="gsm-count-badge"></span>
         </summary>
         <div class="sugg-group-body">
-          <div style="font-size:0.71rem;color:#999;margin-bottom:6px">
-            Class ${clsNum} terms shown first — type to search all 81,000+ pre-approved entries
+          <div style="font-size:0.71rem;color:#999;margin-bottom:6px;line-height:1.5">
+            Class ${clsNum} terms shown first — type to search all 81,000+ pre-approved entries<br>
+            <span style="color:#bbb">Boolean: <code style="background:#f0f2f5;padding:1px 4px;border-radius:3px;font-size:0.68rem">software AND downloadable</code> &nbsp;
+            <code style="background:#f0f2f5;padding:1px 4px;border-radius:3px;font-size:0.68rem">computer OR laptop</code> &nbsp;
+            <code style="background:#f0f2f5;padding:1px 4px;border-radius:3px;font-size:0.68rem">"computer software"</code> &nbsp;
+            <code style="background:#f0f2f5;padding:1px 4px;border-radius:3px;font-size:0.68rem">software*</code></span>
           </div>
           <input type="text" id="gsm-search-input" class="gsm-search-input"
                  placeholder="Search pre-approved terms…"

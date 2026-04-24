@@ -34,27 +34,48 @@ Return ONLY a JSON object — no markdown, no explanation, no other text:
   "trademark_url": "the most direct URL showing the trademark in use (homepage, product page, etc.), or null"
 }}"""
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=800,
-        tools=[{"type": "web_search_20250305", "name": "web_search"}],
-        messages=[{"role": "user", "content": prompt}],
-    )
+    _empty = {"applicant_blurb": None, "applicant_url": None, "trademark_blurb": None, "trademark_url": None}
 
-    full_text = "".join(
-        block.text for block in response.content
-        if hasattr(block, "text") and block.text
-    ).strip()
+    def _call(use_search: bool) -> dict:
+        tools = [{"type": "web_search_20250305", "name": "web_search"}] if use_search else []
+        resp = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1500,
+            tools=tools,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = "".join(
+            b.text for b in resp.content if hasattr(b, "text") and b.text
+        ).strip()
+        if not text:
+            return _empty
+        if text.startswith("```"):
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+        text = text.strip()
+        # If JSON is embedded in prose, extract the first {...} block
+        if not text.startswith("{"):
+            m = re.search(r'\{[\s\S]*"applicant_blurb"[\s\S]*\}', text)
+            if m:
+                text = m.group(0)
+            else:
+                return _empty
+        return json.loads(text)
 
-    if not full_text:
-        return {"applicant_blurb": None, "applicant_url": None, "trademark_blurb": None, "trademark_url": None}
+    try:
+        result = _call(use_search=True)
+    except Exception:
+        result = _empty
 
-    if full_text.startswith("```"):
-        full_text = full_text.split("```")[1]
-        if full_text.startswith("json"):
-            full_text = full_text[4:]
+    # If web search produced nothing, try once more without it (uses training data)
+    if not result.get("applicant_blurb") and not result.get("trademark_blurb"):
+        try:
+            result = _call(use_search=False)
+        except Exception:
+            result = _empty
 
-    return json.loads(full_text.strip())
+    return result
 
 
 # ── Amendment suggestions ──────────────────────────────────────────────────────

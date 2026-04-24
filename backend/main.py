@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from doc_parser import parse_office_action, extract_document_debug
 from cipo import fetch_application
 from analyzer import analyze_office_action, generate_amendment_suggestions, research_context
-from cipo_resources import init_db, load_all, search_specificity, search_tem, search_gsm, get_metadata, resources_loaded, gsm_loaded
+from cipo_resources import init_db, load_all, search_specificity, search_tem, search_gsm, search_gsm_fts, _is_boolean_query, get_metadata, resources_loaded, gsm_loaded, DB_PATH
 
 load_dotenv()
 
@@ -25,10 +25,22 @@ app = FastAPI(
 
 @app.on_event("startup")
 async def startup_event():
+    from cipo_resources import _rebuild_gsm_fts
     init_db()
     if not resources_loaded():
         import threading
         threading.Thread(target=load_all, daemon=True).start()
+    elif gsm_loaded():
+        # Rebuild FTS5 index in background if it's empty (e.g. first run after update)
+        import threading
+        def _maybe_rebuild():
+            import sqlite3 as _sq
+            conn = _sq.connect(DB_PATH)
+            count = conn.execute("SELECT COUNT(*) FROM gsm_fts").fetchone()[0]
+            conn.close()
+            if count == 0:
+                _rebuild_gsm_fts()
+        threading.Thread(target=_maybe_rebuild, daemon=True).start()
 
 app.add_middleware(
     CORSMiddleware,
@@ -253,8 +265,11 @@ def search_resources(term: str, nice_class: str = None):
 
 @app.get("/api/resources/search-gsm")
 def search_gsm_terms(term: str, nice_class: str = None):
-    """Search the pre-approved G&S Manual for matching terms."""
-    results = search_gsm(term, nice_class)
+    """Search the pre-approved G&S Manual. Supports boolean operators (AND/OR/NOT/"phrase"/term*)."""
+    if _is_boolean_query(term):
+        results = search_gsm_fts(term, nice_class)
+    else:
+        results = search_gsm(term, nice_class)
     return {"term": term, "nice_class": nice_class, "results": results}
 
 
@@ -274,7 +289,7 @@ async def research_context_endpoint(body: ResearchRequest):
             research_context, body.applicant_name, body.trademark_name
         )
     except Exception:
-        result = {"blurb": None, "trademark_url": None}
+        result = {"applicant_blurb": None, "applicant_url": None, "trademark_blurb": None, "trademark_url": None}
     return result
 
 

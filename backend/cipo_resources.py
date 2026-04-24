@@ -63,6 +63,13 @@ def init_db():
             downloaded  TEXT,
             source_url  TEXT
         );
+
+        CREATE VIRTUAL TABLE IF NOT EXISTS gsm_fts USING fts5(
+            term,
+            nice_class UNINDEXED,
+            notes      UNINDEXED,
+            tokenize='unicode61 remove_diacritics 1'
+        );
     """)
     # Add columns that may be missing from an older gsm_terms schema
     existing = {row[1] for row in conn.execute("PRAGMA table_info(gsm_terms)")}
@@ -211,10 +218,37 @@ def load_tem():
     print(f"  Loaded into database.")
 
 
+def _rebuild_gsm_fts():
+    """Sync the FTS5 index from gsm_terms (active terms only)."""
+    conn = get_db()
+    conn.execute("DELETE FROM gsm_fts")
+    conn.execute("""
+        INSERT INTO gsm_fts(rowid, term, nice_class, notes)
+        SELECT id, term, nice_class, notes FROM gsm_terms WHERE term_status = 1
+    """)
+    conn.commit()
+    conn.close()
+    print("  GSM FTS5 index rebuilt.")
+
+
+def _is_boolean_query(query: str) -> bool:
+    """Return True if the query contains boolean operators or FTS5 special syntax."""
+    return bool(re.search(r'\b(AND|OR|NOT|and|or|not)\b|["\(\)\*]', query))
+
+
+def _prep_fts_query(query: str) -> str:
+    """Normalize user-entered boolean query for SQLite FTS5 (operators must be uppercase)."""
+    query = re.sub(r'\band\b', 'AND', query, flags=re.IGNORECASE)
+    query = re.sub(r'\bor\b',  'OR',  query, flags=re.IGNORECASE)
+    query = re.sub(r'\bnot\b', 'NOT', query, flags=re.IGNORECASE)
+    return query.strip()
+
+
 def load_gsm():
-    """Run the G&S Manual scraper and populate gsm_terms."""
+    """Run the G&S Manual scraper, populate gsm_terms, then rebuild the FTS5 index."""
     from scrape_gsm import scrape as _scrape_gsm
     _scrape_gsm()
+    _rebuild_gsm_fts()
 
 
 def load_all():
@@ -311,6 +345,60 @@ def search_gsm(term: str, nice_class: str = None, limit: int = 500) -> list[dict
 
     conn.close()
     return [dict(r) for r in rows]
+
+
+def search_gsm_fts(query: str, nice_class: str = None, limit: int = 500) -> list[dict]:
+    """
+    Boolean full-text search over the G&S Manual using SQLite FTS5.
+    Supports AND, OR, NOT, "phrase matching", term* (prefix), and grouping with ().
+    Falls back to LIKE search if the FTS5 query is malformed.
+    """
+    fts_query = _prep_fts_query(query)
+
+    # Ensure FTS5 table exists and is populated
+    conn = get_db()
+    try:
+        fts_count = conn.execute("SELECT COUNT(*) FROM gsm_fts").fetchone()[0]
+    except Exception:
+        fts_count = -1  # table doesn't exist yet — needs init_db + rebuild
+    conn.close()
+    if fts_count == -1:
+        init_db()
+        _rebuild_gsm_fts()
+    elif fts_count == 0:
+        _rebuild_gsm_fts()
+
+    conn = get_db()
+    try:
+        if nice_class:
+            cls = nice_class.zfill(2)
+            rows = conn.execute(
+                """SELECT nice_class, term, notes FROM gsm_fts
+                   WHERE gsm_fts MATCH ? AND nice_class = ?
+                   ORDER BY rank LIMIT ?""",
+                (fts_query, cls, limit),
+            ).fetchall()
+            if len(rows) < 30:
+                extra = conn.execute(
+                    """SELECT nice_class, term, notes FROM gsm_fts
+                       WHERE gsm_fts MATCH ? AND nice_class != ?
+                       ORDER BY rank LIMIT ?""",
+                    (fts_query, cls, limit - len(rows)),
+                ).fetchall()
+                rows = list(rows) + list(extra)
+        else:
+            rows = conn.execute(
+                """SELECT nice_class, term, notes FROM gsm_fts
+                   WHERE gsm_fts MATCH ? ORDER BY rank LIMIT ?""",
+                (fts_query, limit),
+            ).fetchall()
+        conn.close()
+        return [{"nice_class": r[0], "term": r[1], "notes": r[2], "term_status": 1} for r in rows]
+    except Exception:
+        conn.close()
+        # Malformed query — strip FTS5 special chars and fall back to LIKE
+        clean = re.sub(r'["\(\)\*]', ' ', query).strip()
+        return search_gsm(clean, nice_class, limit)
 
 
 def gsm_loaded() -> bool:
