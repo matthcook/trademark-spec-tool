@@ -334,6 +334,7 @@ class AmendmentRequest(BaseModel):
     nice_class: str = ""
     reason: str = ""
     business_context: str = ""   # pre-loaded from /api/research-context
+    term_context: str = ""        # the full semicolon-segment containing the objected term
 
 
 def _gsm_keywords(term: str) -> list[str]:
@@ -409,7 +410,7 @@ async def suggest_amendments(body: AmendmentRequest):
         suggestions = await asyncio.to_thread(
             generate_amendment_suggestions,
             body.term, body.nice_class, body.reason, gsm_for_ai, sg,
-            body.business_context,
+            body.business_context, body.term_context,
         )
     except Exception as exc:
         suggestions = []

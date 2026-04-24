@@ -104,6 +104,16 @@ Return ONLY a JSON object — no markdown, no explanation, no other text:
 
 # ── Amendment suggestions ──────────────────────────────────────────────────────
 
+_CONJUNCTION_FIXES: dict[str, list[dict]] = {
+    "or": [{"replacement": "and", "rationale": "CIPO requires inclusive listing — 'or' creates ambiguity about what is actually claimed; replace with 'and'", "source": "CIPO Practice", "tier": 1}],
+    "and/or": [{"replacement": "and", "rationale": "CIPO does not accept 'and/or'; use 'and' to list all goods/services inclusively", "source": "CIPO Practice", "tier": 1}],
+    "etc": [{"replacement": "[remove — list all items explicitly]", "rationale": "CIPO requires a complete and definite list; 'etc.' is not acceptable", "source": "CIPO Practice", "tier": 1}],
+    "etc.": [{"replacement": "[remove — list all items explicitly]", "rationale": "CIPO requires a complete and definite list; 'etc.' is not acceptable", "source": "CIPO Practice", "tier": 1}],
+    "e.g.": [{"replacement": "namely,", "rationale": "Replace informal 'e.g.' with the trade-mark specification convention 'namely,'", "source": "CIPO Practice", "tier": 1}],
+    "i.e.": [{"replacement": "namely,", "rationale": "Replace informal 'i.e.' with the trade-mark specification convention 'namely,'", "source": "CIPO Practice", "tier": 1}],
+}
+
+
 def generate_amendment_suggestions(
     term: str,
     nice_class: str,
@@ -111,11 +121,17 @@ def generate_amendment_suggestions(
     gsm_matches: list,
     specificity_guidance: list,
     business_context: str = "",
+    term_context: str = "",
 ) -> list[dict]:
     """
     Review ALL pre-approved G&S Manual matches and select the most applicable
     ones for this applicant, using business context for intelligent ranking.
     """
+    # Fast-path: conjunctions and grammar words need a direct fix, not GSM suggestions
+    fix_key = term.strip().lower()
+    if fix_key in _CONJUNCTION_FIXES:
+        return _CONJUNCTION_FIXES[fix_key]
+
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
     # Group GSM matches: same-class first, then cross-class
@@ -148,6 +164,7 @@ def generate_amendment_suggestions(
         sg_block = f"\nCIPO Specificity Guidelines:\n{lines}\n"
 
     context_block = f"\nApplicant context: {business_context}\n" if business_context else ""
+    context_block += f'\nFull good/service containing the objected term: "{term_context}"\n' if term_context else ""
 
     tier_note = (
         "Tier 1 = best match for this applicant's specific use case. Tier 2 = other valid options."
@@ -155,18 +172,31 @@ def generate_amendment_suggestions(
         else "Tier 1 = most specific and likely to satisfy the examiner. Tier 2 = alternatives."
     )
 
-    # Adapt instructions for single words vs. complex multi-word phrases
-    is_complex = len(term.strip().split()) > 3
-    if is_complex:
+    words = term.strip().split()
+    is_single_word = len(words) == 1
+    is_complex = len(words) > 3
+
+    if is_single_word and term_context:
+        # The examiner objected to one word within a larger good/service.
+        # Show the full segment so Claude understands what's actually being fixed.
+        specificity_rule = (
+            f'"{term}" is a single word within the good/service "{term_context}". '
+            f'Suggestions must replace "{term}" with a more specific word or short phrase that fits '
+            f'naturally into the surrounding context — do NOT suggest a completely different good/service. '
+            f'Each suggestion should result in a grammatically correct, CIPO-accepted version of the full term.'
+        )
+    elif is_complex:
         specificity_rule = (
             f'"{term}" is a multi-word phrase. Replacements must describe the same category of goods/services '
             f'but replace the vague or overbroad portions with specific, concrete language. '
             f'The replacement does not need to use the same words — it should describe the specific type of '
-            f'product/service in plain commercial terms (e.g. "downloadable software for fleet vehicle tracking" '
-            f'rather than "software for monitoring and analyzing vehicle data").'
+            f'product/service in plain commercial terms.'
         )
     else:
-        specificity_rule = f'Each replacement must be more specific than "{term}".'
+        specificity_rule = (
+            f'Each replacement must be more specific than "{term}" and accurately describe '
+            f'the goods/services in plain commercial terms.'
+        )
 
     prompt = f"""You are a Canadian trademark agent advising on a CIPO office action response.
 

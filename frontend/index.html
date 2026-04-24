@@ -1015,7 +1015,17 @@
     const bc = currentResearch
       ? [currentResearch.applicant_blurb, currentResearch.trademark_blurb].filter(Boolean).join(" ")
       : "";
-    loadAmendments(el.dataset.term, el.dataset.niceClass, el.dataset.reason, bc);
+    // Find the full semicolon-delimited segment containing this term so the
+    // backend knows whether the objection is about a conjunction vs a full phrase.
+    const termLower = el.dataset.term.toLowerCase();
+    const state = classStates[el.dataset.niceClass];
+    let termContext = '';
+    if (state) {
+      for (const seg of state.currentText.split(';')) {
+        if (seg.toLowerCase().includes(termLower)) { termContext = seg.trim(); break; }
+      }
+    }
+    loadAmendments(el.dataset.term, el.dataset.niceClass, el.dataset.reason, bc, termContext);
   }
 
   // Apply a suggestion to the spec (tracked change: old term → replacement).
@@ -1051,9 +1061,9 @@
     state.appliedTerms[key] = replacement;
 
     // Open the class section and re-render
-    const details = document.querySelector(`.class-details[data-nice-class="${CSS.escape(niceClass)}"]`);
+    const details = document.querySelector(`.class-details[data-nice-class="${niceClass}"]`);
     if (details) details.open = true;
-    const specDiv = document.querySelector(`[data-spec-class="${CSS.escape(niceClass)}"]`);
+    const specDiv = document.querySelector(`[data-spec-class="${niceClass}"]`);
     if (specDiv) renderSpecDiff(specDiv, niceClass);
     markClassModified(niceClass);
     clearTimeout(grammarCheckTimer);
@@ -1309,7 +1319,7 @@
 
   // ── Amendment suggestions ─────────────────────────────────────────────────────
 
-  async function loadAmendments(term, niceClass, reason, businessContext) {
+  async function loadAmendments(term, niceClass, reason, businessContext, termContext = '') {
     const body = document.getElementById("panel-body");
     body.innerHTML = `
       <div class="panel-loading">
@@ -1321,7 +1331,7 @@
       const res = await fetch("/api/suggest-amendments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ term, nice_class: niceClass, reason, business_context: businessContext }),
+        body: JSON.stringify({ term, nice_class: niceClass, reason, business_context: businessContext, term_context: termContext }),
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
@@ -1536,8 +1546,8 @@
   const objHlActive    = new Set(); // classes with objection highlights on
 
   function toggleObjHighlight(niceClass) {
-    const details = document.querySelector(`.class-details[data-nice-class="${CSS.escape(niceClass)}"]`);
-    const specDiv = document.querySelector(`[data-spec-class="${CSS.escape(niceClass)}"]`);
+    const details = document.querySelector(`.class-details[data-nice-class="${niceClass}"]`);
+    const specDiv = document.querySelector(`[data-spec-class="${niceClass}"]`);
     const pill = details && details.querySelector('.objection-pill');
     if (!specDiv || !details) return;
     details.open = true; // ensure stays open regardless of any toggle
@@ -1553,8 +1563,8 @@
   }
 
   function toggleIssueHighlight(niceClass) {
-    const details = document.querySelector(`.class-details[data-nice-class="${CSS.escape(niceClass)}"]`);
-    const specDiv = document.querySelector(`[data-spec-class="${CSS.escape(niceClass)}"]`);
+    const details = document.querySelector(`.class-details[data-nice-class="${niceClass}"]`);
+    const specDiv = document.querySelector(`[data-spec-class="${niceClass}"]`);
     const pill = details && details.querySelector('.issue-pill');
     if (!specDiv || !details) return;
     details.open = true; // ensure stays open regardless of any toggle
@@ -1610,7 +1620,7 @@
 
   // Flash a single issue excerpt (for issue-row click)
   function flashIssue(niceClass, excerpt) {
-    const specDiv = document.querySelector(`[data-spec-class="${CSS.escape(niceClass)}"]`);
+    const specDiv = document.querySelector(`[data-spec-class="${niceClass}"]`);
     if (!specDiv) return;
     const details = specDiv.closest('.class-details');
     if (details) details.open = true;
@@ -1720,7 +1730,7 @@
   function updateClassIssues(niceClass, issues) {
     classIssues[niceClass] = issues || [];
 
-    const details = document.querySelector(`.class-details[data-nice-class="${CSS.escape(niceClass)}"]`);
+    const details = document.querySelector(`.class-details[data-nice-class="${niceClass}"]`);
     if (!details) return;
 
     // Refresh issue pill on summary
