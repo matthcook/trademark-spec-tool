@@ -577,16 +577,30 @@
     .spec-issues-body { padding: 4px 0; }
     .issue-row {
       display: flex;
-      align-items: baseline;
-      gap: 7px;
-      padding: 5px 12px;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 7px 12px;
       border-bottom: 1px solid #fef3c7;
-      font-size: 0.79rem;
-      line-height: 1.45;
       cursor: pointer;
     }
     .issue-row:last-child { border-bottom: none; }
     .issue-row:hover { background: #fffbeb; }
+    .issue-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .issue-excerpt-text {
+      display: inline-block;
+      max-width: 100%;
+      background: #fef08a;
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-family: monospace;
+      font-size: 0.74rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #44403c;
+    }
+    .issue-desc { font-size: 0.79rem; color: #1c1917; line-height: 1.4; }
+    .issue-fix { font-size: 0.74rem; color: #78716c; font-style: italic; }
     mark.issue-hl { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }
     .spec-text::selection, .spec-text *::selection { background: #fef08a; color: inherit; }
     .objection-pill { cursor: pointer; user-select: none; }
@@ -1212,7 +1226,7 @@
       if (objectionCount > 0) details.open = true;
 
       const pillHtml = objectionCount > 0
-        ? `<span class="objection-pill" title="Click to highlight objections in red" onclick="toggleObjHighlight('${esc(cls.nice_class)}')">${objectionCount} objection${objectionCount !== 1 ? "s" : ""}</span>`
+        ? `<span class="objection-pill" title="Click to highlight objections in red">${objectionCount} objection${objectionCount !== 1 ? "s" : ""}</span>`
         : "";
 
       const specHtml = buildMarkedText(cls.marked_text || "", cls.objected_terms || [], cls.nice_class);
@@ -1228,6 +1242,17 @@
           <div class="spec-text" contenteditable="true" spellcheck="false"
                data-spec-class="${esc(cls.nice_class)}">${specHtml}</div>
         </div>`;
+
+      // Intercept pill clicks on the summary: preventDefault stops <details> from toggling.
+      const niceClassCapture = cls.nice_class;
+      details.querySelector('.class-summary').addEventListener('click', (e) => {
+        if (e.target.closest('.objection-pill, .issue-pill')) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.target.closest('.objection-pill')) toggleObjHighlight(niceClassCapture);
+          if (e.target.closest('.issue-pill'))     toggleIssueHighlight(niceClassCapture);
+        }
+      });
 
       doc.appendChild(details);
       wireTermClicks(details);
@@ -1511,9 +1536,11 @@
   const objHlActive    = new Set(); // classes with objection highlights on
 
   function toggleObjHighlight(niceClass) {
+    const details = document.querySelector(`.class-details[data-nice-class="${CSS.escape(niceClass)}"]`);
     const specDiv = document.querySelector(`[data-spec-class="${CSS.escape(niceClass)}"]`);
-    const pill = document.querySelector(`.class-details[data-nice-class="${CSS.escape(niceClass)}"] .objection-pill`);
-    if (!specDiv) return;
+    const pill = details && details.querySelector('.objection-pill');
+    if (!specDiv || !details) return;
+    details.open = true; // ensure stays open regardless of any toggle
     if (objHlActive.has(niceClass)) {
       objHlActive.delete(niceClass);
       specDiv.classList.remove('spec-obj-hl');
@@ -1522,15 +1549,15 @@
       objHlActive.add(niceClass);
       specDiv.classList.add('spec-obj-hl');
       if (pill) pill.classList.add('hl-active');
-      const details = specDiv.closest('.class-details');
-      if (details) details.open = true;
     }
   }
 
   function toggleIssueHighlight(niceClass) {
+    const details = document.querySelector(`.class-details[data-nice-class="${CSS.escape(niceClass)}"]`);
     const specDiv = document.querySelector(`[data-spec-class="${CSS.escape(niceClass)}"]`);
-    const pill = document.querySelector(`.class-details[data-nice-class="${CSS.escape(niceClass)}"] .issue-pill`);
-    if (!specDiv) return;
+    const pill = details && details.querySelector('.issue-pill');
+    if (!specDiv || !details) return;
+    details.open = true; // ensure stays open regardless of any toggle
     if (issueHlActive.has(niceClass)) {
       issueHlActive.delete(niceClass);
       removeIssueMarks(specDiv);
@@ -1538,8 +1565,6 @@
     } else {
       issueHlActive.add(niceClass);
       if (pill) pill.classList.add('hl-active');
-      const details = specDiv.closest('.class-details');
-      if (details) details.open = true;
       applyIssueHighlights(specDiv, classIssues[niceClass] || []);
     }
   }
@@ -1706,7 +1731,6 @@
       pill.className = 'issue-pill' + (issueHlActive.has(niceClass) ? ' hl-active' : '');
       pill.title = 'Click to highlight issues in yellow';
       pill.textContent = `⚠ ${issues.length} issue${issues.length !== 1 ? 's' : ''}`;
-      pill.onclick = (e) => { e.stopPropagation(); toggleIssueHighlight(niceClass); };
       details.querySelector('.class-summary').appendChild(pill);
     }
 
@@ -1725,10 +1749,13 @@
       </div>
       <div class="spec-issues-body">
         ${issues.map(iss => `
-          <div class="issue-row" title="Click to jump to this issue" onclick="flashIssue(${JSON.stringify(niceClass)}, ${JSON.stringify(iss.excerpt || '')})">
+          <div class="issue-row" title="Click to jump to this issue in the spec" onclick="flashIssue(${JSON.stringify(niceClass)}, ${JSON.stringify(iss.excerpt || '')})">
             <span class="issue-type-tag ${esc(iss.issue_type)}">${esc(typeLabel[iss.issue_type] || iss.issue_type)}</span>
-            <span class="issue-desc">${esc(iss.description)}</span>
-            ${iss.suggestion ? `<span class="issue-fix">→ ${esc(iss.suggestion)}</span>` : ''}
+            <div class="issue-content">
+              ${iss.excerpt ? `<span class="issue-excerpt-text">${esc(iss.excerpt)}</span>` : ''}
+              <div class="issue-desc">${esc(iss.description)}</div>
+              ${iss.suggestion ? `<div class="issue-fix">→ ${esc(iss.suggestion)}</div>` : ''}
+            </div>
           </div>`).join('')}
       </div>`;
     details.querySelector('.spec-content').appendChild(bar);
