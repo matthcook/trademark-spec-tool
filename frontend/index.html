@@ -257,25 +257,26 @@
     /* Tracked changes */
     .tc-del {
       text-decoration: line-through;
-      color: #2563eb;
-      text-decoration-color: #2563eb;
+      color: #dc2626;
+      text-decoration-color: #dc2626;
     }
     .tc-ins {
-      color: #dc2626;
-      font-weight: 500;
+      color: #1a1a2e;
+      font-weight: 700;
+      font-style: italic;
     }
 
-    /* Highlighted objected terms */
+    /* Objected terms — underlined to match CIPO office action convention */
     .objected-term {
-      background: #fff3cd;
-      border-bottom: 2px solid #f59e0b;
-      border-radius: 2px;
-      padding: 0 2px;
+      text-decoration: underline;
+      text-underline-offset: 2px;
       cursor: pointer;
+      border-radius: 2px;
+      padding: 0 1px;
       transition: background 0.12s;
     }
-    .objected-term:hover { background: #ffe082; }
-    .objected-term.active { background: #ffd54f; }
+    .objected-term:hover { background: #fff8e1; }
+    .objected-term.active { background: #fff3cd; }
 
     /* ── Amendment side panel ─────────────────────────────────────────────────── */
     #amendment-panel {
@@ -1408,14 +1409,14 @@
         html += esc(node.textContent);
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         if (node.classList.contains("tc-del")) {
-          // Blue strikethrough = deleted text
-          html += `<span style="text-decoration:line-through;color:#1d4ed8">${esc(node.textContent)}</span>`;
+          // Red strikethrough = deleted text
+          html += `<span style="text-decoration:line-through;color:#dc2626">${esc(node.textContent)}</span>`;
         } else if (node.classList.contains("tc-ins")) {
-          // Red = inserted text
-          html += `<span style="color:#dc2626;font-weight:500">${esc(node.textContent)}</span>`;
+          // Black bold italic = added text
+          html += `<span style="font-weight:700;font-style:italic;color:#000">${esc(node.textContent)}</span>`;
         } else if (node.classList.contains("objected-term")) {
-          // Highlighted term — just render plain (no highlighting in email)
-          html += esc(node.textContent);
+          // Underlined = originally objected term (preserve for client)
+          html += `<span style="text-decoration:underline">${esc(node.textContent)}</span>`;
         } else {
           html += _nodeToEmailHtml(node);
         }
