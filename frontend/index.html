@@ -858,13 +858,21 @@
 
   // ── Caret position helpers ────────────────────────────────────────────────────
 
+  // Both caret helpers work in VISIBLE text space only (tc-del spans are excluded)
+  // so offsets stay consistent before/after innerHTML replacement.
   function getCaretOffset(el) {
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return 0;
-    const r = sel.getRangeAt(0).cloneRange();
-    r.selectNodeContents(el);
-    r.setEnd(sel.getRangeAt(0).startContainer, sel.getRangeAt(0).startOffset);
-    return r.toString().length;
+    const range = sel.getRangeAt(0);
+    let count = 0;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.parentElement.closest(".tc-del")) continue;
+      if (node === range.startContainer) { count += range.startOffset; break; }
+      count += node.length;
+    }
+    return count;
   }
 
   function setCaretOffset(el, offset) {
@@ -873,6 +881,7 @@
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     let count = 0, node;
     while ((node = walker.nextNode())) {
+      if (node.parentElement.closest(".tc-del")) continue;
       if (count + node.length >= offset) {
         range.setStart(node, Math.min(offset - count, node.length));
         range.collapse(true);
@@ -937,7 +946,7 @@
     const diff = wordDiff(state.originalText, state.currentText);
     let html = "";
     for (const seg of diff) {
-      if (seg.type === "del") html += `<span class="tc-del">${esc(seg.text)}</span>`;
+      if (seg.type === "del") html += `<span class="tc-del" contenteditable="false">${esc(seg.text)}</span>`;
       else if (seg.type === "ins") html += `<span class="tc-ins">${esc(seg.text)}</span>`;
       else html += wrapObjectedTerms(seg.text, state.objectedTerms, niceClass);
     }
@@ -972,6 +981,8 @@
   function applyTrackedChange(niceClass, term, replacement) {
     const state = classStates[niceClass];
     if (!state) return;
+    if (!state.history) state.history = [];
+    state.history.push(state.currentText);
     // Undo a previous replacement for this term if any
     const key = term.toLowerCase();
     if (state.appliedTerms && state.appliedTerms[key]) {
@@ -1010,13 +1021,32 @@
     diffTimers[niceClass] = setTimeout(() => {
       if (!classStates[niceClass]) return;
       const caretOffset = getCaretOffset(specDiv);
-      classStates[niceClass].currentText = getSpecCurrentText(specDiv);
+      const newText = getSpecCurrentText(specDiv);
+      if (newText !== classStates[niceClass].currentText) {
+        classStates[niceClass].history.push(classStates[niceClass].currentText);
+        classStates[niceClass].currentText = newText;
+      }
       renderSpecDiff(specDiv, niceClass);
       if (document.activeElement === specDiv) setCaretOffset(specDiv, caretOffset);
       markClassModified(niceClass);
       clearTimeout(grammarCheckTimer);
       grammarCheckTimer = setTimeout(() => runGrammarCheck(), 3000);
     }, 400);
+  });
+
+  // Undo (Cmd/Ctrl+Z) — restores previous currentText from per-class history stack
+  document.getElementById("specDoc").addEventListener("keydown", e => {
+    if (!(e.metaKey || e.ctrlKey) || e.key !== "z") return;
+    const specDiv = e.target.closest("[data-spec-class]");
+    if (!specDiv) return;
+    const niceClass = specDiv.dataset.specClass;
+    const state = classStates[niceClass];
+    if (!state || !state.history || !state.history.length) return;
+    e.preventDefault();
+    clearTimeout(diffTimers[niceClass]);
+    state.currentText = state.history.pop();
+    renderSpecDiff(specDiv, niceClass);
+    markClassModified(niceClass);
   });
 
   // "Use this" button
@@ -1114,6 +1144,7 @@
         currentText: origText,
         objectedTerms: cls.objected_terms || [],
         appliedTerms: {},
+        history: [],
       };
 
       const details = document.createElement("details");
