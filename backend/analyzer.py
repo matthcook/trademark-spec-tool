@@ -5,6 +5,21 @@ import httpx
 import json
 import os
 import re
+import time
+
+
+def _claude_create_with_retry(client, max_retries: int = 4, **kwargs):
+    """Call client.messages.create with exponential back-off on 529 overload errors."""
+    delay = 5
+    for attempt in range(max_retries):
+        try:
+            return client.messages.create(**kwargs)
+        except anthropic.APIStatusError as exc:
+            if exc.status_code == 529 and attempt < max_retries - 1:
+                time.sleep(delay)
+                delay = min(delay * 2, 60)
+                continue
+            raise
 
 
 # ── Web research helpers ───────────────────────────────────────────────────────
@@ -44,7 +59,8 @@ Return ONLY a JSON object — no markdown, no explanation, no other text:
 
     def _call(use_search: bool) -> dict:
         tools = [{"type": "web_search_20250305", "name": "web_search"}] if use_search else []
-        resp = client.messages.create(
+        resp = _claude_create_with_retry(
+            client,
             model="claude-sonnet-4-6",
             max_tokens=1500,
             tools=tools,
@@ -176,7 +192,8 @@ Return a JSON array only — no markdown, no explanation:
   }}
 ]"""
 
-    message = client.messages.create(
+    message = _claude_create_with_retry(
+        client,
         model="claude-sonnet-4-6",
         max_tokens=3000,
         messages=[{"role": "user", "content": prompt}],
@@ -261,7 +278,8 @@ Return ONLY a JSON array — empty array [] if there are no issues:
   }}
 ]"""
 
-    message = client.messages.create(
+    message = _claude_create_with_retry(
+        client,
         model="claude-sonnet-4-6",
         max_tokens=2000,
         messages=[{"role": "user", "content": prompt}],
@@ -410,7 +428,8 @@ Critical rules:
 - Return only valid JSON with no additional text
 """
 
-    message = client.messages.create(
+    message = _claude_create_with_retry(
+        client,
         model="claude-sonnet-4-6",
         max_tokens=4000,
         messages=[{"role": "user", "content": prompt}],
