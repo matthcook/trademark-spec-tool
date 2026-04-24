@@ -825,17 +825,9 @@
   // ── Word-level LCS diff ───────────────────────────────────────────────────────
 
   function wordDiff(a, b) {
-    const tok = s => {
-      const t = []; let i = 0;
-      while (i < s.length) {
-        const ws = /\s/.test(s[i]);
-        let j = i;
-        while (j < s.length && /\s/.test(s[j]) === ws) j++;
-        t.push(s.slice(i, j));
-        i = j;
-      }
-      return t;
-    };
+    // Tokenize into: word-runs (letters/digits/hyphen/apostrophe), whitespace-runs, or single punctuation chars.
+    // This keeps punctuation as its own token so adding a comma after a word shows only an insertion, not del+ins.
+    const tok = s => s.match(/[\wÀ-ɏ'-]+|\s+|[\s\S]/g) || [];
     const A = tok(a), B = tok(b);
     const m = A.length, n = B.length;
     const dp = Array.from({length: m + 1}, () => new Int32Array(n + 1));
@@ -962,7 +954,12 @@
     });
   }
 
+  let lastSpecInputTime = 0;
+
   function handleTermClick(el) {
+    // Suppress panel when the user clicked to reposition their cursor while actively editing.
+    // After 1.5 s of no typing, a click on an objected term reopens the panel as normal.
+    if (Date.now() - lastSpecInputTime < 1500) return;
     document.querySelectorAll(".objected-term.active").forEach(e => e.classList.remove("active"));
     el.classList.add("active");
     panelState.term = el.dataset.term;
@@ -1017,6 +1014,7 @@
     const specDiv = e.target.closest("[data-spec-class]");
     if (!specDiv) return;
     const niceClass = specDiv.dataset.specClass;
+    lastSpecInputTime = Date.now();
     clearTimeout(diffTimers[niceClass]);
     diffTimers[niceClass] = setTimeout(() => {
       if (!classStates[niceClass]) return;
