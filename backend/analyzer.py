@@ -241,7 +241,9 @@ def check_grammar(classes: list[dict]) -> list[dict]:
 
     spec_lines = []
     for cls in classes:
-        text = re.sub(r'\{\{([^}]+)\}\}', r'\1', cls.get("marked_text", "") or "").strip()
+        # Prefer current_text (live edited state) over marked_text (original)
+        raw = cls.get("current_text") or cls.get("marked_text", "") or ""
+        text = re.sub(r'\{\{([^}]+)\}\}', r'\1', raw).strip()
         if text:
             spec_lines.append(f"Class {cls.get('nice_class','?')}: {text}")
 
@@ -253,12 +255,16 @@ def check_grammar(classes: list[dict]) -> list[dict]:
 SPECIFICATION TO REVIEW:
 {chr(10).join(spec_lines)}
 
+Terms within each class are separated by semicolons. Each semicolon-delimited segment is one complete good or service.
+
 YOUR TASK — identify only genuine errors in these four categories:
 
-1. duplicate_goods — The same good or service appears more than once, either:
-   (a) verbatim or near-verbatim within the same class (e.g. "downloadable software" and "software, downloadable"), OR
-   (b) the same commercial activity listed under two different classes where that is incorrect.
-   Do NOT flag terms that are genuinely distinct even if related.
+1. duplicate_goods — Two COMPLETE goods/services (entire semicolon-delimited segments) are substantively identical, meaning:
+   (a) verbatim or near-verbatim duplicates (e.g. the segment "computer software" appears twice), OR
+   (b) the same items listed in a different order (e.g. "clothing, namely, shirts, pants, and shoes" and "clothing, namely, pants, shoes, and shirts"), OR
+   (c) one segment is so similar to another that a trademark examiner would consider them the same good/service.
+   CRITICAL: Do NOT flag a word or phrase simply because it appears in many different terms. For example, "computer software" appearing in 10 different terms is completely normal — only flag it if an entire segment consists of nothing other than that phrase and it appears more than once. Only flag COMPLETE SEGMENT duplicates.
+   Do NOT suggest consolidating — that is not a practical solution. Instead describe which segments are duplicates.
 
 2. grammar — A phrase is structurally broken: missing a key word, wrong word order, truncated sentence, or a preposition left dangling with nothing following it (e.g. "software for the", "retail of").
    Do NOT flag terms that are simply unconventional but clear.
@@ -266,17 +272,17 @@ YOUR TASK — identify only genuine errors in these four categories:
 3. missing_punctuation — A comma is clearly required inside a term for grammatical correctness, OR two separate goods/services have been run together without a semicolon between them.
    NOTE: Semicolons between separate goods/services are CORRECT and must NOT be flagged.
 
-4. duplicate_word — The same word appears twice in a row (e.g. "computer computer software"), which is clearly a typo.
+4. duplicate_word — The same word appears twice consecutively within a single term (e.g. "computer computer software"), which is clearly a typo.
 
 Return ONLY a JSON array — empty array [] if there are no issues:
 [
   {{
     "nice_class": "09",
-    "excerpt": "exact verbatim text showing the problem, ≤60 chars",
+    "excerpt": "the complete duplicate segment or the exact broken phrase, ≤60 chars",
     "issue_type": "duplicate_goods" | "grammar" | "missing_punctuation" | "duplicate_word",
     "severity": "error",
-    "description": "one precise sentence describing the problem",
-    "suggestion": "specific corrected text or action"
+    "description": "one precise sentence — for duplicates, name both duplicate segments",
+    "suggestion": "specific corrected text or action — do NOT suggest consolidating"
   }}
 ]"""
 

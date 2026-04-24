@@ -546,7 +546,11 @@
       padding: 2px 8px;
       border-radius: 10px;
       font-weight: 600;
+      cursor: pointer;
+      user-select: none;
     }
+    .issue-pill:hover { background: #fde68a; }
+    .issue-pill.hl-active { background: #fde68a; border-color: #f59e0b; }
 
     .spec-issues {
       margin-top: 10px;
@@ -579,8 +583,16 @@
       border-bottom: 1px solid #fef3c7;
       font-size: 0.79rem;
       line-height: 1.45;
+      cursor: pointer;
     }
     .issue-row:last-child { border-bottom: none; }
+    .issue-row:hover { background: #fffbeb; }
+    mark.issue-hl { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }
+    .spec-text::selection, .spec-text *::selection { background: #fef08a; color: inherit; }
+    .objection-pill { cursor: pointer; user-select: none; }
+    .objection-pill:hover { opacity: 0.8; }
+    .objection-pill.hl-active { outline: 2px solid #dc2626; }
+    .spec-obj-hl .objected-term { background: rgba(220,38,38,0.15) !important; outline: 1px solid rgba(220,38,38,0.4); border-radius: 2px; }
     .issue-type-tag {
       flex-shrink: 0;
       font-size: 0.62rem;
@@ -959,6 +971,10 @@
     specDiv.innerHTML = html;
     wireTermClicks(specDiv);
 
+    // Re-apply persistent highlights after innerHTML rebuild
+    if (objHlActive.has(niceClass)) specDiv.classList.add('spec-obj-hl');
+    if (issueHlActive.has(niceClass)) applyIssueHighlights(specDiv, classIssues[niceClass] || []);
+
     if (isActive && caretOffset !== null) setCaretOffset(specDiv, caretOffset);
   }
 
@@ -1026,6 +1042,8 @@
     const specDiv = document.querySelector(`[data-spec-class="${CSS.escape(niceClass)}"]`);
     if (specDiv) renderSpecDiff(specDiv, niceClass);
     markClassModified(niceClass);
+    clearTimeout(grammarCheckTimer);
+    grammarCheckTimer = setTimeout(() => runGrammarCheck(), 1000);
     return true;
   }
 
@@ -1194,7 +1212,7 @@
       if (objectionCount > 0) details.open = true;
 
       const pillHtml = objectionCount > 0
-        ? `<span class="objection-pill">${objectionCount} objection${objectionCount !== 1 ? "s" : ""}</span>`
+        ? `<span class="objection-pill" title="Click to highlight objections in red" onclick="toggleObjHighlight('${esc(cls.nice_class)}')">${objectionCount} objection${objectionCount !== 1 ? "s" : ""}</span>`
         : "";
 
       const specHtml = buildMarkedText(cls.marked_text || "", cls.objected_terms || [], cls.nice_class);
@@ -1489,6 +1507,118 @@
 
   const classIssues = {};   // niceClass → [{issue_type, description, suggestion, excerpt}]
   let grammarCheckTimer = null;
+  const issueHlActive  = new Set(); // classes with issue highlights on
+  const objHlActive    = new Set(); // classes with objection highlights on
+
+  function toggleObjHighlight(niceClass) {
+    const specDiv = document.querySelector(`[data-spec-class="${CSS.escape(niceClass)}"]`);
+    const pill = document.querySelector(`.class-details[data-nice-class="${CSS.escape(niceClass)}"] .objection-pill`);
+    if (!specDiv) return;
+    if (objHlActive.has(niceClass)) {
+      objHlActive.delete(niceClass);
+      specDiv.classList.remove('spec-obj-hl');
+      if (pill) pill.classList.remove('hl-active');
+    } else {
+      objHlActive.add(niceClass);
+      specDiv.classList.add('spec-obj-hl');
+      if (pill) pill.classList.add('hl-active');
+      const details = specDiv.closest('.class-details');
+      if (details) details.open = true;
+    }
+  }
+
+  function toggleIssueHighlight(niceClass) {
+    const specDiv = document.querySelector(`[data-spec-class="${CSS.escape(niceClass)}"]`);
+    const pill = document.querySelector(`.class-details[data-nice-class="${CSS.escape(niceClass)}"] .issue-pill`);
+    if (!specDiv) return;
+    if (issueHlActive.has(niceClass)) {
+      issueHlActive.delete(niceClass);
+      removeIssueMarks(specDiv);
+      if (pill) pill.classList.remove('hl-active');
+    } else {
+      issueHlActive.add(niceClass);
+      if (pill) pill.classList.add('hl-active');
+      const details = specDiv.closest('.class-details');
+      if (details) details.open = true;
+      applyIssueHighlights(specDiv, classIssues[niceClass] || []);
+    }
+  }
+
+  function removeIssueMarks(root) {
+    root.querySelectorAll('mark.issue-hl').forEach(m => m.replaceWith(...m.childNodes));
+  }
+
+  function applyIssueHighlights(specDiv, issues) {
+    removeIssueMarks(specDiv);
+    for (const iss of issues) {
+      const query = (iss.excerpt || '').replace(/…$/, '').trim();
+      if (query.length < 3) continue;
+      wrapFirstTextMatch(specDiv, query);
+    }
+    if (issues.length) specDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // Wraps the first occurrence of `query` (case-insensitive) in a <mark class="issue-hl">
+  // Works only when the match falls within a single text node; skips tc-del content.
+  function wrapFirstTextMatch(root, query) {
+    const lq = query.toLowerCase();
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.parentElement.closest('.tc-del, .issue-hl')) continue;
+      const idx = node.textContent.toLowerCase().indexOf(lq);
+      if (idx < 0) continue;
+      const before = node.textContent.slice(0, idx);
+      const match  = node.textContent.slice(idx, idx + query.length);
+      const after  = node.textContent.slice(idx + query.length);
+      const frag = document.createDocumentFragment();
+      if (before) frag.appendChild(document.createTextNode(before));
+      const mark = document.createElement('mark');
+      mark.className = 'issue-hl';
+      mark.textContent = match;
+      frag.appendChild(mark);
+      if (after) frag.appendChild(document.createTextNode(after));
+      node.parentNode.replaceChild(frag, node);
+      return;
+    }
+  }
+
+  // Flash a single issue excerpt (for issue-row click)
+  function flashIssue(niceClass, excerpt) {
+    const specDiv = document.querySelector(`[data-spec-class="${CSS.escape(niceClass)}"]`);
+    if (!specDiv) return;
+    const details = specDiv.closest('.class-details');
+    if (details) details.open = true;
+    // Select the text so it shows yellow (via ::selection CSS)
+    const query = excerpt.replace(/…$/, '').trim();
+    if (!query) return;
+    let pos = 0;
+    const nodes = [];
+    const walker = document.createTreeWalker(specDiv, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.parentElement.closest('.tc-del')) continue;
+      nodes.push({ node, start: pos });
+      pos += node.textContent.length;
+    }
+    const fullText = nodes.map(n => n.node.textContent).join('').toLowerCase();
+    const idx = fullText.indexOf(query.toLowerCase());
+    if (idx < 0) return;
+    const end = idx + query.length;
+    let startNode, startOff, endNode, endOff;
+    for (const { node, start } of nodes) {
+      const ne = start + node.textContent.length;
+      if (!startNode && ne > idx) { startNode = node; startOff = idx - start; }
+      if (ne >= end) { endNode = node; endOff = end - start; break; }
+    }
+    if (!startNode || !endNode) return;
+    const range = document.createRange();
+    range.setStart(startNode, startOff);
+    range.setEnd(endNode, Math.min(endOff, endNode.textContent.length));
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    specDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 
   // Client-side rules — run instantly, no API call
   function getClientSideIssues(niceClass, text) {
@@ -1573,9 +1703,10 @@
     if (oldPill) oldPill.remove();
     if (issues && issues.length) {
       const pill = document.createElement('span');
-      pill.className = 'issue-pill';
-      pill.title = issues.map(i => i.description).join('\n');
+      pill.className = 'issue-pill' + (issueHlActive.has(niceClass) ? ' hl-active' : '');
+      pill.title = 'Click to highlight issues in yellow';
       pill.textContent = `⚠ ${issues.length} issue${issues.length !== 1 ? 's' : ''}`;
+      pill.onclick = (e) => { e.stopPropagation(); toggleIssueHighlight(niceClass); };
       details.querySelector('.class-summary').appendChild(pill);
     }
 
@@ -1594,7 +1725,7 @@
       </div>
       <div class="spec-issues-body">
         ${issues.map(iss => `
-          <div class="issue-row">
+          <div class="issue-row" title="Click to jump to this issue" onclick="flashIssue(${JSON.stringify(niceClass)}, ${JSON.stringify(iss.excerpt || '')})">
             <span class="issue-type-tag ${esc(iss.issue_type)}">${esc(typeLabel[iss.issue_type] || iss.issue_type)}</span>
             <span class="issue-desc">${esc(iss.description)}</span>
             ${iss.suggestion ? `<span class="issue-fix">→ ${esc(iss.suggestion)}</span>` : ''}
@@ -1606,11 +1737,17 @@
   async function runGrammarCheck() {
     if (!currentAnalysis || !(currentAnalysis.classes || []).length) return;
 
+    // Build classes with the CURRENT text (reflects all edits made so far)
+    const liveClasses = (currentAnalysis.classes || []).map(cls => ({
+      nice_class: cls.nice_class,
+      goods_or_services: cls.goods_or_services,
+      current_text: (classStates[cls.nice_class] || {}).currentText
+                    || extractPlainText(cls.marked_text || ''),
+    }));
+
     // Step 1 — client-side rules immediately
-    for (const cls of currentAnalysis.classes) {
-      const state = classStates[cls.nice_class];
-      const text = state ? state.currentText : extractPlainText(cls.marked_text || '');
-      updateClassIssues(cls.nice_class, getClientSideIssues(cls.nice_class, text));
+    for (const lc of liveClasses) {
+      updateClassIssues(lc.nice_class, getClientSideIssues(lc.nice_class, lc.current_text));
     }
 
     // Step 2 — server-side Claude deep-check (async, merges in after)
@@ -1618,7 +1755,7 @@
       const res = await fetch('/api/check-grammar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classes: currentAnalysis.classes }),
+        body: JSON.stringify({ classes: liveClasses }),
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -1630,13 +1767,13 @@
         serverByClass[iss.nice_class].push(iss);
       }
 
-      for (const cls of currentAnalysis.classes) {
-        const clientIssues = classIssues[cls.nice_class] || [];
-        const serverIssues = (serverByClass[cls.nice_class] || []).filter(si =>
+      for (const lc of liveClasses) {
+        const clientIssues = classIssues[lc.nice_class] || [];
+        const serverIssues = (serverByClass[lc.nice_class] || []).filter(si =>
           !clientIssues.some(ci => ci.description === si.description)
         );
         if (serverIssues.length) {
-          updateClassIssues(cls.nice_class, [...clientIssues, ...serverIssues]);
+          updateClassIssues(lc.nice_class, [...clientIssues, ...serverIssues]);
         }
       }
     } catch(e) {
