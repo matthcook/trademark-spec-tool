@@ -202,6 +202,87 @@ Return a JSON array only — no markdown, no explanation:
     return json.loads(raw)
 
 
+# ── Grammar & duplicate checker ───────────────────────────────────────────────
+
+def check_grammar(classes: list[dict]) -> list[dict]:
+    """
+    Review all spec classes for grammar errors and duplicate goods/services.
+    Returns a list of {nice_class, excerpt, issue_type, severity, description, suggestion}.
+    """
+    if not classes:
+        return []
+
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+    spec_lines = []
+    for cls in classes:
+        text = re.sub(r'\{\{([^}]+)\}\}', r'\1', cls.get("marked_text", "") or "").strip()
+        if text:
+            spec_lines.append(f"Class {cls.get('nice_class','?')}: {text}")
+
+    if not spec_lines:
+        return []
+
+    prompt = f"""You are a Canadian trademark agent carefully proofreading a trademark specification before filing a response to a CIPO office action. Any error you miss could trigger another office action.
+
+SPECIFICATION TO REVIEW:
+{chr(10).join(spec_lines)}
+
+YOUR TASK — identify only genuine errors in these four categories:
+
+1. duplicate_goods — The same good or service appears more than once, either:
+   (a) verbatim or near-verbatim within the same class (e.g. "downloadable software" and "software, downloadable"), OR
+   (b) the same commercial activity listed under two different classes where that is incorrect.
+   Do NOT flag terms that are genuinely distinct even if related.
+
+2. grammar — A phrase is structurally broken: missing a key word, wrong word order, truncated sentence, or a preposition left dangling with nothing following it (e.g. "software for the", "retail of").
+   Do NOT flag terms that are simply unconventional but clear.
+
+3. missing_punctuation — A comma is clearly required inside a term for grammatical correctness, OR two separate goods/services have been run together without a semicolon between them.
+   NOTE: Semicolons between separate goods/services are CORRECT and must NOT be flagged.
+
+4. duplicate_word — The same word appears twice in a row (e.g. "computer computer software"), which is clearly a typo.
+
+Return ONLY a JSON array — empty array [] if there are no issues:
+[
+  {{
+    "nice_class": "09",
+    "excerpt": "exact verbatim text showing the problem, ≤60 chars",
+    "issue_type": "duplicate_goods" | "grammar" | "missing_punctuation" | "duplicate_word",
+    "severity": "error",
+    "description": "one precise sentence describing the problem",
+    "suggestion": "specific corrected text or action"
+  }}
+]"""
+
+    message = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=2000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    raw = ""
+    for block in message.content:
+        if hasattr(block, "text") and block.text:
+            raw = block.text.strip()
+            break
+
+    if not raw:
+        return []
+
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    raw = raw.strip()
+
+    if not raw.startswith("["):
+        m = re.search(r'\[[\s\S]*\]', raw)
+        raw = m.group(0) if m else "[]"
+
+    return json.loads(raw)
+
+
 # ── Personal spec library parsing ────────────────────────────────────────────
 
 def parse_spec_into_terms(text: str) -> list[dict]:

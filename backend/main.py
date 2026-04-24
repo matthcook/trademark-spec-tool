@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 from doc_parser import parse_office_action, extract_document_debug
 from cipo import fetch_application
-from analyzer import analyze_office_action, generate_amendment_suggestions, research_context, parse_spec_into_terms
+from analyzer import analyze_office_action, generate_amendment_suggestions, research_context, parse_spec_into_terms, check_grammar
 from cipo_resources import (init_db, load_all, search_specificity, search_tem, search_gsm,
     search_gsm_fts, _is_boolean_query, get_metadata, resources_loaded, gsm_loaded, DB_PATH,
     add_user_spec_terms, list_user_spec_sources, delete_user_spec_source, search_user_specs)
@@ -455,6 +455,25 @@ async def debug_parse(file: UploadFile = File(...)):
         return result
     finally:
         os.unlink(tmp_path)
+
+
+# ── Grammar checker endpoint ──────────────────────────────────────────────────
+
+class GrammarCheckRequest(BaseModel):
+    classes: list[dict]
+
+
+@app.post("/api/check-grammar")
+async def check_grammar_endpoint(body: GrammarCheckRequest):
+    """Check specification classes for grammar errors and duplicate goods/services."""
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not configured.")
+    import asyncio
+    try:
+        issues = await asyncio.to_thread(check_grammar, body.classes)
+    except Exception as e:
+        issues = []
+    return {"issues": issues}
 
 
 # ── Personal spec library endpoints ───────────────────────────────────────────

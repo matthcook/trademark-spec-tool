@@ -520,6 +520,70 @@
       border-top: 1px solid #f0f4f8;
       font-style: italic;
     }
+
+    /* ── Grammar / duplicate issues ──────────────────────────────────────────── */
+    .issue-pill {
+      flex-shrink: 0;
+      font-family: -apple-system, sans-serif;
+      font-size: 0.7rem;
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    .spec-issues {
+      margin-top: 10px;
+      border: 1px solid #fcd34d;
+      border-radius: 6px;
+      overflow: hidden;
+      font-family: -apple-system, sans-serif;
+    }
+    .spec-issues-header {
+      background: #fef9ec;
+      padding: 6px 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #92400e;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .spec-issues-header:hover { background: #fef3c7; }
+    .spec-issues-body { padding: 4px 0; }
+    .issue-row {
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+      padding: 5px 12px;
+      border-bottom: 1px solid #fef3c7;
+      font-size: 0.79rem;
+      line-height: 1.45;
+    }
+    .issue-row:last-child { border-bottom: none; }
+    .issue-type-tag {
+      flex-shrink: 0;
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 1px 5px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    .issue-type-tag.duplicate_word     { background: #fee2e2; color: #991b1b; }
+    .issue-type-tag.duplicate_goods    { background: #ede9fe; color: #5b21b6; }
+    .issue-type-tag.grammar            { background: #ffedd5; color: #9a3412; }
+    .issue-type-tag.missing_punctuation{ background: #dbeafe; color: #1e40af; }
+    .issue-type-tag.structural         { background: #dcfce7; color: #166534; }
+    .issue-desc { flex: 1; color: #44403c; }
+    .issue-fix  { color: #059669; font-style: italic; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -950,6 +1014,8 @@
       renderSpecDiff(specDiv, niceClass);
       if (document.activeElement === specDiv) setCaretOffset(specDiv, caretOffset);
       markClassModified(niceClass);
+      clearTimeout(grammarCheckTimer);
+      grammarCheckTimer = setTimeout(() => runGrammarCheck(), 3000);
     }, 400);
   });
 
@@ -1032,6 +1098,7 @@
     resultsEl.style.display = "block";
     resultsEl.scrollIntoView({ behavior: "smooth" });
     loadResearch(a.applicant_name, a.trademark_name);
+    runGrammarCheck();
   }
 
   function renderClasses(classes) {
@@ -1343,6 +1410,165 @@
     }
   }
 
+  // ── Grammar checker ───────────────────────────────────────────────────────────
+
+  const classIssues = {};   // niceClass → [{issue_type, description, suggestion, excerpt}]
+  let grammarCheckTimer = null;
+
+  // Client-side rules — run instantly, no API call
+  function getClientSideIssues(niceClass, text) {
+    const issues = [];
+    if (!text || !text.trim()) return issues;
+
+    // Split into individual terms on semicolons
+    const terms = text.split(';').map(t => t.trim()).filter(Boolean);
+
+    // 1. Duplicate consecutive words (e.g. "computer computer software")
+    terms.forEach(term => {
+      const words = term.split(/\s+/);
+      for (let i = 0; i < words.length - 1; i++) {
+        const w1 = words[i].toLowerCase().replace(/[^a-z0-9]/g, '');
+        const w2 = words[i+1].toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (w1 && w2 && w1 === w2 && w1.length > 1) {
+          issues.push({
+            nice_class: niceClass,
+            excerpt: words.slice(Math.max(0,i-1), i+3).join(' '),
+            issue_type: 'duplicate_word',
+            severity: 'error',
+            description: `Duplicate word "${words[i]}" appears twice in a row`,
+            suggestion: `Remove one instance of "${words[i]}"`,
+          });
+        }
+      }
+    });
+
+    // 2. Double semicolons
+    if (/;;/.test(text)) {
+      issues.push({
+        nice_class: niceClass,
+        excerpt: ';;',
+        issue_type: 'missing_punctuation',
+        severity: 'error',
+        description: 'Double semicolon — empty term between two semicolons',
+        suggestion: 'Remove the extra semicolon',
+      });
+    }
+
+    // 3. Exact duplicate terms within this class
+    const seen = new Map();
+    terms.forEach((term, i) => {
+      const key = term.toLowerCase().replace(/\s+/g, ' ');
+      if (seen.has(key)) {
+        issues.push({
+          nice_class: niceClass,
+          excerpt: term.slice(0, 55) + (term.length > 55 ? '…' : ''),
+          issue_type: 'duplicate_goods',
+          severity: 'error',
+          description: `Duplicate entry in Class ${niceClass}: "${term.slice(0, 45)}${term.length > 45 ? '…' : ''}"`,
+          suggestion: 'Remove one of the duplicate entries',
+        });
+      } else {
+        seen.set(key, i);
+      }
+    });
+
+    // 4. Trailing semicolons / empty last term
+    if (text.trimEnd().endsWith(';')) {
+      issues.push({
+        nice_class: niceClass,
+        excerpt: '…' + text.trimEnd().slice(-12),
+        issue_type: 'missing_punctuation',
+        severity: 'error',
+        description: 'Specification ends with a semicolon — the last term may be missing',
+        suggestion: 'Remove the trailing semicolon or add the missing term',
+      });
+    }
+
+    return issues;
+  }
+
+  function updateClassIssues(niceClass, issues) {
+    classIssues[niceClass] = issues || [];
+
+    const details = document.querySelector(`.class-details[data-nice-class="${CSS.escape(niceClass)}"]`);
+    if (!details) return;
+
+    // Refresh issue pill on summary
+    const oldPill = details.querySelector('.issue-pill');
+    if (oldPill) oldPill.remove();
+    if (issues && issues.length) {
+      const pill = document.createElement('span');
+      pill.className = 'issue-pill';
+      pill.title = issues.map(i => i.description).join('\n');
+      pill.textContent = `⚠ ${issues.length} issue${issues.length !== 1 ? 's' : ''}`;
+      details.querySelector('.class-summary').appendChild(pill);
+    }
+
+    // Refresh inline issues block
+    const oldBar = details.querySelector('.spec-issues');
+    if (oldBar) oldBar.remove();
+    if (!issues || !issues.length) return;
+
+    const typeLabel = { duplicate_goods: 'Duplicate', duplicate_word: 'Dup. word', grammar: 'Grammar', missing_punctuation: 'Punctuation', structural: 'Structure' };
+
+    const bar = document.createElement('div');
+    bar.className = 'spec-issues';
+    bar.innerHTML = `
+      <div class="spec-issues-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? '' : 'none'">
+        ⚠ ${issues.length} issue${issues.length !== 1 ? 's' : ''} — click to show/hide
+      </div>
+      <div class="spec-issues-body">
+        ${issues.map(iss => `
+          <div class="issue-row">
+            <span class="issue-type-tag ${esc(iss.issue_type)}">${esc(typeLabel[iss.issue_type] || iss.issue_type)}</span>
+            <span class="issue-desc">${esc(iss.description)}</span>
+            ${iss.suggestion ? `<span class="issue-fix">→ ${esc(iss.suggestion)}</span>` : ''}
+          </div>`).join('')}
+      </div>`;
+    details.querySelector('.spec-content').appendChild(bar);
+  }
+
+  async function runGrammarCheck() {
+    if (!currentAnalysis || !(currentAnalysis.classes || []).length) return;
+
+    // Step 1 — client-side rules immediately
+    for (const cls of currentAnalysis.classes) {
+      const state = classStates[cls.nice_class];
+      const text = state ? state.currentText : extractPlainText(cls.marked_text || '');
+      updateClassIssues(cls.nice_class, getClientSideIssues(cls.nice_class, text));
+    }
+
+    // Step 2 — server-side Claude deep-check (async, merges in after)
+    try {
+      const res = await fetch('/api/check-grammar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classes: currentAnalysis.classes }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+
+      // Merge server issues onto existing client-side issues per class
+      const serverByClass = {};
+      for (const iss of (data.issues || [])) {
+        if (!serverByClass[iss.nice_class]) serverByClass[iss.nice_class] = [];
+        serverByClass[iss.nice_class].push(iss);
+      }
+
+      for (const cls of currentAnalysis.classes) {
+        const clientIssues = classIssues[cls.nice_class] || [];
+        const serverIssues = (serverByClass[cls.nice_class] || []).filter(si =>
+          !clientIssues.some(ci => ci.description === si.description)
+        );
+        if (serverIssues.length) {
+          updateClassIssues(cls.nice_class, [...clientIssues, ...serverIssues]);
+        }
+      }
+    } catch(e) {
+      // Grammar check is optional — fail silently
+    }
+  }
+
   // ── Email export ──────────────────────────────────────────────────────────────
 
   function exportForEmail() {
@@ -1593,6 +1819,7 @@
       const data = await res.json();
       currentAnalysis = data.analysis;
       renderClasses(currentAnalysis.classes || []);
+      runGrammarCheck();
       const banner = document.getElementById("cipoBanner");
       banner.style.background = "#e6f4ea";
       banner.style.borderLeftColor = "#2e7d32";
