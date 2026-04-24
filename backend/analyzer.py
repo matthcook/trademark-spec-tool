@@ -176,12 +176,30 @@ Return a JSON array only — no markdown, no explanation:
         messages=[{"role": "user", "content": prompt}],
     )
 
-    raw = message.content[0].text.strip()
+    raw = ""
+    for block in message.content:
+        if hasattr(block, "text") and block.text:
+            raw = block.text.strip()
+            break
+
+    if not raw:
+        return []
+
     if raw.startswith("```"):
         raw = raw.split("```")[1]
         if raw.startswith("json"):
             raw = raw[4:]
-    return json.loads(raw.strip())
+    raw = raw.strip()
+
+    # If JSON array is embedded in prose, extract it
+    if not raw.startswith("["):
+        m = re.search(r'\[[\s\S]*\]', raw)
+        if m:
+            raw = m.group(0)
+        else:
+            return []
+
+    return json.loads(raw)
 
 
 # ── Office action analysis ─────────────────────────────────────────────────────

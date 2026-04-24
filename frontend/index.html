@@ -939,10 +939,19 @@
       cipoBanner.innerHTML = `✓ Full specification loaded from CIPO database`;
     } else if (data.cipo_fetch_error) {
       cipoBanner.style.display = "block";
-      cipoBanner.style.background = "#fff8e1";
-      cipoBanner.style.borderLeftColor = "#f59e0b";
-      cipoBanner.style.color = "#7c5800";
-      cipoBanner.innerHTML = `⚠ Full specification not loaded from CIPO — analysis may be missing non-objected classes. &nbsp;<button onclick="openPasteSpecModal()" style="font-size:0.82rem;padding:3px 10px;border:1px solid #c97a00;border-radius:4px;background:#fffbe6;color:#7c5800;cursor:pointer;font-weight:600">Paste CIPO spec →</button>`;
+      const hasClasses = (a.classes || []).length > 0;
+      if (hasClasses) {
+        // Spec was extracted from the document — warn softly that non-objected classes may still be missing
+        cipoBanner.style.background = "#f0f4f8";
+        cipoBanner.style.borderLeftColor = "#94a3b8";
+        cipoBanner.style.color = "#475569";
+        cipoBanner.innerHTML = `ℹ Specification extracted from document — CIPO database not consulted. Non-objected classes may be missing. &nbsp;<button onclick="openPasteSpecModal()" style="font-size:0.82rem;padding:3px 10px;border:1px solid #94a3b8;border-radius:4px;background:#e8ecf2;color:#475569;cursor:pointer;font-weight:600">Paste full spec →</button>`;
+      } else {
+        cipoBanner.style.background = "#fff8e1";
+        cipoBanner.style.borderLeftColor = "#f59e0b";
+        cipoBanner.style.color = "#7c5800";
+        cipoBanner.innerHTML = `⚠ Specification not loaded — analysis may be incomplete. &nbsp;<button onclick="openPasteSpecModal()" style="font-size:0.82rem;padding:3px 10px;border:1px solid #c97a00;border-radius:4px;background:#fffbe6;color:#7c5800;cursor:pointer;font-weight:600">Paste CIPO spec →</button>`;
+      }
     } else {
       cipoBanner.style.display = "none";
     }
