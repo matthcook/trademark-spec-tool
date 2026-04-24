@@ -988,26 +988,45 @@
     loadAmendments(el.dataset.term, el.dataset.niceClass, el.dataset.reason, bc);
   }
 
-  // Apply a suggestion to the spec (tracked change: old term → replacement)
+  // Apply a suggestion to the spec (tracked change: old term → replacement).
+  // Returns true if the text actually changed, false if the term wasn't found.
   function applyTrackedChange(niceClass, term, replacement) {
     const state = classStates[niceClass];
-    if (!state) return;
+    if (!state) return false;
     if (!state.history) state.history = [];
     state.history.push(state.currentText);
-    // Undo a previous replacement for this term if any
+
     const key = term.toLowerCase();
+
+    // Undo a previous replacement for this term so we're always patching the
+    // original term. appliedTerms stores the CURRENT form of the term in the
+    // text (which could be "term, namely, ..." or a wholesale replacement).
     if (state.appliedTerms && state.appliedTerms[key]) {
       const prev = state.appliedTerms[key];
       state.currentText = state.currentText.replace(new RegExp(escapeRegex(prev), "gi"), term);
     }
+
     // Apply the new replacement
+    const before = state.currentText;
     state.currentText = state.currentText.replace(new RegExp(escapeRegex(term), "gi"), replacement);
+    const changed = state.currentText !== before;
+
+    if (!changed) {
+      // Nothing matched — restore history entry and bail
+      state.history.pop();
+      return false;
+    }
+
     if (!state.appliedTerms) state.appliedTerms = {};
     state.appliedTerms[key] = replacement;
 
-    const specDiv = document.querySelector(`[data-spec-class="${niceClass}"]`);
+    // Open the class section and re-render
+    const details = document.querySelector(`.class-details[data-nice-class="${CSS.escape(niceClass)}"]`);
+    if (details) details.open = true;
+    const specDiv = document.querySelector(`[data-spec-class="${CSS.escape(niceClass)}"]`);
     if (specDiv) renderSpecDiff(specDiv, niceClass);
     markClassModified(niceClass);
+    return true;
   }
 
   function markClassModified(niceClass) {
@@ -1071,11 +1090,16 @@
       const finalReplacement = isNamely
         ? `${panelState.term}, namely, ${baseReplacement}`
         : baseReplacement;
-      applyTrackedChange(panelState.niceClass, panelState.term, finalReplacement);
-      btn.textContent = "Applied!";
-      btn.classList.add("applied");
+      const ok = applyTrackedChange(panelState.niceClass, panelState.term, finalReplacement);
       const resetLabel = isNamely ? "+ Namely" : "Replace";
-      setTimeout(() => { btn.textContent = resetLabel; btn.classList.remove("applied"); }, 2500);
+      if (ok) {
+        btn.textContent = "Applied!";
+        btn.classList.add("applied");
+        setTimeout(() => { btn.textContent = resetLabel; btn.classList.remove("applied"); }, 2500);
+      } else {
+        btn.textContent = "Term not found";
+        setTimeout(() => { btn.textContent = resetLabel; }, 2500);
+      }
     }
   });
 

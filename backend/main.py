@@ -391,7 +391,7 @@ async def suggest_amendments(body: AmendmentRequest):
     nice_cls = body.nice_class.zfill(2) if body.nice_class else ""
     gsm_same  = [r for r in gsm if r.get("nice_class","").zfill(2) == nice_cls]
     gsm_cross = [r for r in gsm if r not in gsm_same]
-    gsm_for_ai = (gsm_same[:140] + gsm_cross[:10])[:150]
+    gsm_for_ai = (gsm_same[:55] + gsm_cross[:5])[:60]
 
     # Same multi-keyword approach for specificity guidelines
     sg_seen: set = set()

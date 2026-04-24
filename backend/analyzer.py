@@ -15,8 +15,10 @@ def _claude_create_with_retry(client, max_retries: int = 4, **kwargs):
         try:
             return client.messages.create(**kwargs)
         except anthropic.APIStatusError as exc:
-            if exc.status_code == 529 and attempt < max_retries - 1:
-                time.sleep(delay)
+            if exc.status_code in (429, 529) and attempt < max_retries - 1:
+                # 429 = rate limit (wait longer); 529 = overloaded (shorter wait)
+                wait = delay * 2 if exc.status_code == 429 else delay
+                time.sleep(wait)
                 delay = min(delay * 2, 60)
                 continue
             raise
