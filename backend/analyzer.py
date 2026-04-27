@@ -314,7 +314,8 @@ Return ONLY a JSON array — empty array [] if there are no issues:
 [
   {{
     "nice_class": "09",
-    "excerpt": "the complete duplicate segment or the exact broken phrase, ≤60 chars",
+    "excerpt": "the first duplicate segment or the exact broken phrase, copied verbatim from the spec, ≤60 chars",
+    "excerpt2": "for duplicate_goods ONLY: the SECOND duplicate segment, copied verbatim from the spec, ≤60 chars — omit this field for all other issue types",
     "issue_type": "duplicate_goods" | "grammar" | "missing_punctuation" | "duplicate_word",
     "severity": "error",
     "description": "one precise sentence — for duplicates, name both duplicate segments",

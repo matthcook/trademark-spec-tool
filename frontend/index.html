@@ -1620,9 +1620,12 @@
     for (const iss of issues) {
       const query = (iss.excerpt || '').replace(/…$/, '').trim();
       if (query.length < 3) continue;
-      // Duplicates: highlight every occurrence so both copies are visible
       if (iss.issue_type === 'duplicate_goods' || iss.issue_type === 'duplicate_word') {
+        // highlight all occurrences of the first term (handles exact duplicates)
         wrapAllTextMatches(specDiv, query);
+        // also highlight the second term for synonym-based duplicates
+        const q2 = (iss.excerpt2 || '').replace(/…$/, '').trim();
+        if (q2.length >= 3) wrapFirstTextMatch(specDiv, q2);
       } else {
         wrapFirstTextMatch(specDiv, query);
       }
@@ -1689,13 +1692,12 @@
     const details = specDiv.closest('.class-details');
     if (details) details.open = true;
 
-    // Apply highlights if not already on
-    if (!issueHlActive.has(niceClass)) {
-      issueHlActive.add(niceClass);
-      applyIssueHighlights(specDiv, classIssues[niceClass] || []);
-      const pill = details && details.querySelector('.issue-pill');
-      if (pill) pill.classList.add('hl-active');
-    }
+    // Always (re-)apply highlights so that clicking any issue row is guaranteed
+    // to show marks, whether highlights were previously on or off
+    issueHlActive.add(niceClass);
+    applyIssueHighlights(specDiv, classIssues[niceClass] || []);
+    const pill = details && details.querySelector('.issue-pill');
+    if (pill) pill.classList.add('hl-active');
 
     // Scroll to the mark matching this specific excerpt
     const query = (excerpt || '').replace(/…$/, '').trim();
