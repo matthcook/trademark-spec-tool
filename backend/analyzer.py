@@ -292,8 +292,11 @@ YOUR TASK — identify only genuine errors in these four categories:
 1. duplicate_goods — Two COMPLETE goods/services (entire semicolon-delimited segments) are substantively identical, meaning:
    (a) verbatim or near-verbatim duplicates (e.g. the segment "computer software" appears twice), OR
    (b) the same items listed in a different order (e.g. "clothing, namely, shirts, pants, and shoes" and "clothing, namely, pants, shoes, and shirts"), OR
-   (c) one segment is so similar to another that a trademark examiner would consider them the same good/service.
-   CRITICAL: Do NOT flag a word or phrase simply because it appears in many different terms. For example, "computer software" appearing in 10 different terms is completely normal — only flag it if an entire segment consists of nothing other than that phrase and it appears more than once. Only flag COMPLETE SEGMENT duplicates.
+   (c) one segment is so similar to another that a trademark examiner would consider them the same good/service (e.g. "downloadable software for managing financial records" and "downloadable software for the management of financial records" are duplicates).
+   CRITICAL — Do NOT flag:
+   • A word or phrase that simply appears in many different terms. "Computer software" appearing in 10 different terms is completely normal.
+   • A SHORT standalone term that also appears as words within a LONGER term. For example, "clothing" as one segment and "clothing, namely, shirts and pants" as another segment are NOT duplicates — they have different scope. "Software" and "software for managing databases" are NOT duplicates. Only flag when the two segments cover the exact same scope.
+   Only flag COMPLETE SEGMENT duplicates where both segments describe the same goods/services.
    Do NOT suggest consolidating — that is not a practical solution. Instead describe which segments are duplicates.
 
 2. grammar — A phrase is structurally broken: missing a key word, wrong word order, truncated sentence, or a preposition left dangling with nothing following it (e.g. "software for the", "retail of").
@@ -320,6 +323,7 @@ Return ONLY a JSON array — empty array [] if there are no issues:
         client,
         model="claude-sonnet-4-6",
         max_tokens=2000,
+        temperature=0,
         messages=[{"role": "user", "content": prompt}],
     )
 
@@ -469,7 +473,7 @@ Critical rules:
     message = _claude_create_with_retry(
         client,
         model="claude-sonnet-4-6",
-        max_tokens=4000,
+        max_tokens=8000,
         messages=[{"role": "user", "content": prompt}],
     )
 
