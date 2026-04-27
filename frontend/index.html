@@ -1685,22 +1685,25 @@
     }
   }
 
-  // Clicking an issue row: turn on highlights for the class and scroll to that term
-  function flashIssue(niceClass, excerpt) {
+  // Clicking an issue row: highlight only that issue's terms and scroll to them
+  function flashIssue(niceClass, excerpt, excerpt2) {
     const specDiv = document.querySelector(`[data-spec-class="${niceClass}"]`);
     if (!specDiv) return;
     const details = specDiv.closest('.class-details');
     if (details) details.open = true;
 
-    // Always (re-)apply highlights so that clicking any issue row is guaranteed
-    // to show marks, whether highlights were previously on or off
+    // Replace any existing marks with highlights for just this issue's terms
+    removeIssueMarks(specDiv);
+    const query = (excerpt || '').replace(/…$/, '').trim();
+    if (query.length >= 3) wrapAllTextMatches(specDiv, query);
+    const q2 = (excerpt2 || '').replace(/…$/, '').trim();
+    if (q2.length >= 3) wrapFirstTextMatch(specDiv, q2);
+
     issueHlActive.add(niceClass);
-    applyIssueHighlights(specDiv, classIssues[niceClass] || []);
     const pill = details && details.querySelector('.issue-pill');
     if (pill) pill.classList.add('hl-active');
 
-    // Scroll to the mark matching this specific excerpt
-    const query = (excerpt || '').replace(/…$/, '').trim();
+    // Scroll to the first mark for this issue
     if (!query) return;
     const lq = query.toLowerCase().slice(0, 30);
     const marks = specDiv.querySelectorAll('mark.issue-hl');
@@ -1819,7 +1822,7 @@
       </div>
       <div class="spec-issues-body">
         ${issues.map(iss => `
-          <div class="issue-row" title="Click to jump to this issue in the spec" onclick="flashIssue(${JSON.stringify(niceClass)}, ${JSON.stringify(iss.excerpt || '')})">
+          <div class="issue-row" title="Click to jump to this issue in the spec" onclick="flashIssue(${JSON.stringify(niceClass)}, ${JSON.stringify(iss.excerpt || '')}, ${JSON.stringify(iss.excerpt2 || '')})">
             <span class="issue-type-tag ${esc(iss.issue_type)}">${esc(typeLabel[iss.issue_type] || iss.issue_type)}</span>
             <div class="issue-content">
               ${iss.excerpt ? `<span class="issue-excerpt-text">${esc(iss.excerpt)}</span>` : ''}
@@ -1914,10 +1917,15 @@
         for (const iss of (data.issues || [])) {
           if (!serverIssueStore[iss.nice_class]) serverIssueStore[iss.nice_class] = [];
           const store = serverIssueStore[iss.nice_class];
-          const isDup = store.some(e =>
+          const existingIdx = store.findIndex(e =>
             e.description === iss.description || _excerptKey(e) === _excerptKey(iss)
           );
-          if (!isDup) store.push(iss);
+          if (existingIdx >= 0) {
+            // Merge: keep existing entry but add any new fields (e.g. excerpt2)
+            store[existingIdx] = { ...store[existingIdx], ...iss };
+          } else {
+            store.push(iss);
+          }
         }
 
         // Re-render with freshly accumulated server issues
