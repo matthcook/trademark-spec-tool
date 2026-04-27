@@ -1,4 +1,6 @@
 import re
+import tempfile
+import os
 from docx import Document
 from dataclasses import dataclass
 from typing import Optional
@@ -262,3 +264,133 @@ def parse_office_action(file_path: str) -> ParsedOfficeAction:
         full_text="\n".join(full_text_lines),
         paragraphs_with_formatting=paragraphs_with_formatting,
     )
+
+
+def parse_pdf_office_action(file_path: str) -> ParsedOfficeAction:
+    """
+    Parse a CIPO office action PDF directly using PyMuPDF.
+    Detects bold and underlined text to produce the same tagged output as parse_office_action.
+    """
+    import fitz  # PyMuPDF
+
+    doc = fitz.open(file_path)
+    paragraphs_with_formatting = []
+    full_text_lines = []
+
+    for page in doc:
+        blocks = page.get_text("dict", flags=fitz.TEXT_PRESERVE_WHITESPACE)["blocks"]
+        for block in blocks:
+            if block.get("type") != 0:  # text block
+                continue
+            for line in block.get("lines", []):
+                line_text = ""
+                tagged = ""
+                runs = []
+                for span in line.get("spans", []):
+                    text = span.get("text", "")
+                    if not text:
+                        continue
+                    flags = span.get("flags", 0)
+                    bold = bool(flags & 2**4)       # bold flag
+                    underline = bool(flags & 2**2)  # underline flag
+                    line_text += text
+                    t = text
+                    if bold and underline:
+                        t = f"[BOLD_UNDERLINE]{t}[/BOLD_UNDERLINE]"
+                    elif bold:
+                        t = f"[BOLD]{t}[/BOLD]"
+                    elif underline:
+                        t = f"[UNDERLINE]{t}[/UNDERLINE]"
+                    tagged += t
+                    runs.append({"text": text, "bold": bold, "underline": underline})
+
+                if line_text.strip():
+                    paragraphs_with_formatting.append({
+                        "text": line_text,
+                        "tagged": tagged,
+                        "runs": runs,
+                    })
+                    full_text_lines.append(line_text)
+
+    doc.close()
+
+    # Reuse the same number/name extraction logic
+    re_fields = _extract_re_table_from_paragraphs(paragraphs_with_formatting)
+    app_number, ir_number = _extract_numbers_from_chunks(
+        [p["text"] for p in paragraphs_with_formatting]
+    )
+
+    return ParsedOfficeAction(
+        application_number=app_number,
+        ir_number=ir_number,
+        trademark_name=re_fields["trademark_name"],
+        applicant_name=re_fields["applicant_name"],
+        formatting_convention=None,
+        full_text="\n".join(full_text_lines),
+        paragraphs_with_formatting=paragraphs_with_formatting,
+    )
+
+
+def _extract_re_table_from_paragraphs(paragraphs: list[dict]) -> dict:
+    """Extract trademark name and applicant from plain text paragraphs (PDF path)."""
+    result = {"trademark_name": None, "applicant_name": None}
+    for p in paragraphs:
+        text = p["text"].strip()
+        parts = [x.strip() for x in re.split(r"\t+", text)]
+        for i, part in enumerate(parts):
+            if not result["trademark_name"] and re.match(r"Trademark\s*:|Marque\s*de\s*commerce\s*:", part, re.I):
+                if i + 1 < len(parts) and parts[i + 1]:
+                    result["trademark_name"] = parts[i + 1]
+            if not result["applicant_name"] and re.match(r"Applicant\s*:|Demandeur\s*:", part, re.I):
+                if i + 1 < len(parts) and parts[i + 1]:
+                    result["applicant_name"] = parts[i + 1]
+    return result
+
+
+def _extract_numbers_from_chunks(chunks: list[str]) -> tuple[Optional[str], Optional[str]]:
+    """Extract application number and IR number from a list of text strings."""
+    our_file_re = re.compile(
+        r"(?:Our\s+(?:File|Ref(?:erence)?)|Notre\s+(?:dossier|r[ée]f(?:[ée]rence)?)"
+        r"|No\.?\s*de\s+(?:dossier|r[ée]f(?:[ée]rence)?)|File\s+No\.?|Ref(?:erence)?\s*No\.?)"
+        r"[^0-9]{0,30}?([\d][\d,\s\xa0]{4,9}[\d])",
+        re.IGNORECASE,
+    )
+    ir_re = re.compile(
+        r"(?:IR\s+(?:No\.?|Number|Num\.?)|Int(?:ernational)?\s+Reg(?:istration)?\.?\s*(?:No\.?|Number)?)"
+        r"[^0-9]{0,20}?([\d][\d,\s\xa0]{4,9}[\d])",
+        re.IGNORECASE,
+    )
+    app_number: Optional[str] = None
+    ir_number: Optional[str] = None
+
+    for text in chunks:
+        if not app_number:
+            m = our_file_re.search(text)
+            if m:
+                app_number = _clean_num(m.group(1))
+        if not ir_number:
+            m = ir_re.search(text)
+            if m:
+                ir_number = _clean_num(m.group(1))
+        if app_number and ir_number:
+            break
+
+    if not app_number:
+        for text in chunks:
+            for candidate in _find_formatted_numbers(text):
+                if re.fullmatch(r"2\d{6}", candidate) and candidate != ir_number:
+                    app_number = candidate
+                    break
+            if app_number:
+                break
+
+    if not app_number:
+        for text in chunks:
+            for candidate in _find_formatted_numbers(text):
+                if candidate != ir_number:
+                    app_number = candidate
+                    break
+            if app_number:
+                break
+
+    return app_number, ir_number

@@ -646,15 +646,15 @@
 
   <div class="card">
     <h2>Upload CIPO Office Action</h2>
-    <p class="sub">Upload the examiner's office action as a Word document (.docx). The tool will identify objected goods and services and display the full specification with objections highlighted.</p>
+    <p class="sub">Upload the examiner's office action as a Word (.docx) or PDF file. The tool will identify objected goods and services and display the full specification with objections highlighted.</p>
 
     <div class="upload-area" id="dropzone">
       <label for="fileInput">
         <div class="icon">📄</div>
         <strong>Click to choose a file</strong>, or drag and drop here
-        <div class="hint">Accepted format: .docx (Word document)</div>
+        <div class="hint">Accepted formats: .docx (Word) or .pdf</div>
       </label>
-      <input type="file" id="fileInput" accept=".docx" />
+      <input type="file" id="fileInput" accept=".docx,.pdf" />
     </div>
 
     <button class="btn" id="uploadBtn" disabled>Analyze Office Action</button>
@@ -724,7 +724,7 @@
         <div style="display:flex;gap:8px">
           <button onclick="openLibraryUploadModal('file')"
             style="font-size:0.78rem;padding:5px 14px;border:1px solid #c0ccdf;border-radius:6px;background:#f4f7ff;color:#4a6fa5;cursor:pointer;font-weight:600">
-            Upload .docx
+            Upload file
           </button>
           <button onclick="openLibraryUploadModal('text')"
             style="font-size:0.78rem;padding:5px 14px;border:1px solid #c0ccdf;border-radius:6px;background:#f4f7ff;color:#4a6fa5;cursor:pointer;font-weight:600">
@@ -749,7 +749,7 @@
     <p style="margin:0 0 12px;font-size:0.87rem;color:#555" id="libraryModalDesc"></p>
 
     <div id="libraryFileArea" style="display:none">
-      <input type="file" id="libraryFileInput" accept=".docx"
+      <input type="file" id="libraryFileInput" accept=".docx,.pdf"
         style="font-size:0.85rem;width:100%;border:1px solid #ccc;border-radius:6px;padding:8px">
     </div>
     <div id="libraryTextArea" style="display:none">

@@ -9,7 +9,7 @@ from pydantic import BaseModel
 import uvicorn
 from dotenv import load_dotenv
 
-from doc_parser import parse_office_action, extract_document_debug
+from doc_parser import parse_office_action, parse_pdf_office_action, extract_document_debug
 from cipo import fetch_application
 from analyzer import analyze_office_action, generate_amendment_suggestions, research_context, parse_spec_into_terms, check_grammar
 from cipo_resources import (init_db, load_all, search_specificity, search_tem, search_gsm,
@@ -111,17 +111,18 @@ def lookup_application(app_number: str):
 @app.post("/api/parse-objection")
 async def parse_objection(file: UploadFile = File(...)):
     """
-    Accept a CIPO office action (.docx), parse it, fetch the CIPO application,
+    Accept a CIPO office action (.docx or .pdf), parse it, fetch the CIPO application,
     and return structured objection data.
     """
-    if not file.filename.endswith(".docx"):
-        raise HTTPException(status_code=400, detail="Please upload a .docx (Word) file.")
+    fname = file.filename.lower()
+    if not (fname.endswith(".docx") or fname.endswith(".pdf")):
+        raise HTTPException(status_code=400, detail="Please upload a .docx or .pdf file.")
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
         raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not configured.")
 
-    # Save the uploaded file temporarily
-    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+    suffix = ".pdf" if fname.endswith(".pdf") else ".docx"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         tmp.write(await file.read())
         tmp_path = tmp.name
 
@@ -129,8 +130,9 @@ async def parse_objection(file: UploadFile = File(...)):
         import asyncio
         import traceback
 
-        # Step 1: Parse the .docx
-        parsed = parse_office_action(tmp_path)
+        # Step 1: Parse the document
+        parser = parse_pdf_office_action if suffix == ".pdf" else parse_office_action
+        parsed = await asyncio.to_thread(parser, tmp_path)
 
         # Step 2: Fetch CIPO application data (run in thread — can block 20-30s with web search)
         cipo_app = None
@@ -439,23 +441,29 @@ async def suggest_amendments(body: AmendmentRequest):
 @app.post("/api/debug-parse")
 async def debug_parse(file: UploadFile = File(...)):
     """
-    Return raw paragraph and table text extracted from a .docx without any
+    Return raw paragraph and table text extracted from a .docx or .pdf without any
     analysis. Use this to diagnose why an application number or spec is not
     being found.
     """
-    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+    import asyncio
+    fname = file.filename.lower()
+    suffix = ".pdf" if fname.endswith(".pdf") else ".docx"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         tmp.write(await file.read())
         tmp_path = tmp.name
     try:
-        result = extract_document_debug(tmp_path)
-        # Also run the application number extractor so we can see what it finds
-        parsed = parse_office_action(tmp_path)
+        parser = parse_pdf_office_action if suffix == ".pdf" else parse_office_action
+        parsed = await asyncio.to_thread(parser, tmp_path)
+        result = {} if suffix == ".pdf" else extract_document_debug(tmp_path)
         result["extracted_app_number"] = parsed.application_number
         result["extracted_trademark"] = parsed.trademark_name
         result["extracted_applicant"] = parsed.applicant_name
         return result
     finally:
-        os.unlink(tmp_path)
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
 
 
 # ── Grammar checker endpoint ──────────────────────────────────────────────────
@@ -515,21 +523,22 @@ async def upload_user_spec_text(body: UserSpecTextRequest):
 
 @app.post("/api/user-specs/upload")
 async def upload_user_spec_file(file: UploadFile = File(...)):
-    """Parse and index a .docx reference spec file into the personal library."""
+    """Parse and index a .docx or .pdf reference spec file into the personal library."""
     if not os.environ.get("ANTHROPIC_API_KEY"):
         raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not configured.")
-    if not file.filename.endswith(".docx"):
-        raise HTTPException(status_code=400, detail="Please upload a .docx file.")
+    fname = file.filename.lower()
+    if not (fname.endswith(".docx") or fname.endswith(".pdf")):
+        raise HTTPException(status_code=400, detail="Please upload a .docx or .pdf file.")
 
-    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+    suffix = ".pdf" if fname.endswith(".pdf") else ".docx"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         tmp.write(await file.read())
         tmp_path = tmp.name
 
     try:
         import asyncio
-        from doc_parser import parse_office_action as _parse
-        # Extract all text from the document
-        doc_text = _parse(tmp_path).full_text
+        parser = parse_pdf_office_action if suffix == ".pdf" else parse_office_action
+        doc_text = (await asyncio.to_thread(parser, tmp_path)).full_text
         terms = await asyncio.to_thread(parse_spec_into_terms, doc_text)
         source_name = file.filename.rsplit(".", 1)[0]
         count = add_user_spec_terms(source_name, terms)
@@ -537,7 +546,10 @@ async def upload_user_spec_file(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Parsing failed: {str(e)}")
     finally:
-        os.unlink(tmp_path)
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
