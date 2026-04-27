@@ -292,10 +292,13 @@ YOUR TASK — identify only genuine errors in these four categories:
 1. duplicate_goods — Two COMPLETE goods/services (entire semicolon-delimited segments) are substantively identical, meaning:
    (a) verbatim or near-verbatim duplicates (e.g. the segment "computer software" appears twice), OR
    (b) the same items listed in a different order (e.g. "clothing, namely, shirts, pants, and shoes" and "clothing, namely, pants, shoes, and shirts"), OR
-   (c) one segment is so similar to another that a trademark examiner would consider them the same good/service (e.g. "downloadable software for managing financial records" and "downloadable software for the management of financial records" are duplicates).
+   (c) one segment uses synonyms or paraphrasing of another such that a trademark examiner would consider them the same good/service. This is the most important category. Examples of synonym-based duplicates that MUST be flagged:
+      • "prepared dishes consisting principally of meat" and "prepared meals consisting primarily of meat" — DUPLICATE ("dishes" ≈ "meals", "principally" ≈ "primarily")
+      • "downloadable software for managing financial records" and "downloadable software for the management of financial records" — DUPLICATE
+      • "retail sale of clothing" and "retail services featuring clothing" — DUPLICATE
    CRITICAL — Do NOT flag:
    • A word or phrase that simply appears in many different terms. "Computer software" appearing in 10 different terms is completely normal.
-   • A SHORT standalone term that also appears as words within a LONGER term. For example, "clothing" as one segment and "clothing, namely, shirts and pants" as another segment are NOT duplicates — they have different scope. "Software" and "software for managing databases" are NOT duplicates. Only flag when the two segments cover the exact same scope.
+   • A SHORT standalone term that also appears as words within a LONGER term. For example, "clothing" as one segment and "clothing, namely, shirts and pants" as another segment are NOT duplicates — they have different scope. Only flag when two segments cover the exact same scope.
    Only flag COMPLETE SEGMENT duplicates where both segments describe the same goods/services.
    Do NOT suggest consolidating — that is not a practical solution. Instead describe which segments are duplicates.
 
