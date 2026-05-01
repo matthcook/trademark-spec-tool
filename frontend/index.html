@@ -1817,12 +1817,12 @@
     const bar = document.createElement('div');
     bar.className = 'spec-issues';
     bar.innerHTML = `
-      <div class="spec-issues-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? '' : 'none'">
+      <div class="spec-issues-header">
         ⚠ ${issues.length} issue${issues.length !== 1 ? 's' : ''} — click to show/hide
       </div>
       <div class="spec-issues-body">
         ${issues.map(iss => `
-          <div class="issue-row" title="Click to jump to this issue in the spec" onclick="flashIssue(${JSON.stringify(niceClass)}, ${JSON.stringify(iss.excerpt || '')}, ${JSON.stringify(iss.excerpt2 || '')})">
+          <div class="issue-row" title="Click to jump to this issue in the spec">
             <span class="issue-type-tag ${esc(iss.issue_type)}">${esc(typeLabel[iss.issue_type] || iss.issue_type)}</span>
             <div class="issue-content">
               ${iss.excerpt ? `<span class="issue-excerpt-text">${esc(iss.excerpt)}</span>` : ''}
@@ -1832,6 +1832,15 @@
           </div>`).join('')}
       </div>`;
     details.querySelector('.spec-content').appendChild(bar);
+
+    // Attach click listeners via JS (not inline onclick) to avoid HTML quoting issues
+    bar.querySelector('.spec-issues-header').addEventListener('click', function() {
+      const body = this.nextElementSibling;
+      body.style.display = body.style.display === 'none' ? '' : 'none';
+    });
+    bar.querySelectorAll('.issue-row').forEach((row, i) => {
+      row.addEventListener('click', () => flashIssue(niceClass, issues[i].excerpt || '', issues[i].excerpt2 || ''));
+    });
 
     // Add re-check button to the header via DOM (avoids template quoting issues)
     const header = bar.querySelector('.spec-issues-header');
