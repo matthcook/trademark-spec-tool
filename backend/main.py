@@ -1,7 +1,7 @@
 import os
 import re
 import tempfile
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 from doc_parser import parse_office_action, parse_pdf_office_action, extract_document_debug
 from cipo import fetch_application
-from analyzer import analyze_office_action, generate_amendment_suggestions, research_context, parse_spec_into_terms, check_grammar
+from analyzer import analyze_office_action, generate_amendment_suggestions, research_context, parse_spec_into_terms, check_grammar, check_examiner_objections, check_single_term, score_acceptance_likelihood
 from cipo_resources import (init_db, load_all, search_specificity, search_tem, search_gsm,
     search_gsm_fts, _is_boolean_query, get_metadata, resources_loaded, gsm_loaded, DB_PATH,
     add_user_spec_terms, list_user_spec_sources, delete_user_spec_source, search_user_specs)
@@ -458,12 +458,42 @@ async def debug_parse(file: UploadFile = File(...)):
         result["extracted_app_number"] = parsed.application_number
         result["extracted_trademark"] = parsed.trademark_name
         result["extracted_applicant"] = parsed.applicant_name
+        if suffix == ".pdf":
+            result["pdf_diagnostics"] = _pdf_diagnostics(tmp_path)
         return result
     finally:
         try:
             os.unlink(tmp_path)
         except Exception:
             pass
+
+
+def _pdf_diagnostics(file_path: str) -> dict:
+    """Return raw drawing rects and text span data from page 1 for debugging underline detection."""
+    import fitz
+    doc = fitz.open(file_path)
+    page = doc[0]
+    drawings = []
+    for d in page.get_drawings():
+        r = d.get("rect")
+        if r:
+            drawings.append({"h": round(r.height, 2), "w": round(r.width, 2),
+                             "x0": round(r.x0, 2), "y0": round(r.y0, 2),
+                             "x1": round(r.x1, 2), "y1": round(r.y1, 2)})
+    spans = []
+    for block in page.get_text("dict")["blocks"]:
+        if block.get("type") != 0:
+            continue
+        for line in block.get("lines", []):
+            for span in line.get("spans", []):
+                text = span.get("text", "").strip()
+                if not text:
+                    continue
+                b = span["bbox"]
+                spans.append({"flags": span["flags"], "text": text[:60],
+                              "bbox": [round(x, 2) for x in b]})
+    doc.close()
+    return {"drawings": drawings[:50], "spans": spans[:50]}
 
 
 # ── Grammar checker endpoint ──────────────────────────────────────────────────
@@ -483,6 +513,58 @@ async def check_grammar_endpoint(body: GrammarCheckRequest):
     except Exception as e:
         issues = []
     return {"issues": issues}
+
+
+# ── Examiner error detection ──────────────────────────────────────────────────
+
+@app.post("/api/check-objections")
+async def check_objections_endpoint(request: Request):
+    """Check each objected term against the CIPO G&S Manual for potential examiner errors."""
+    import asyncio
+    data = await request.json()
+    classes = data.get("classes", [])
+    try:
+        flags = await asyncio.to_thread(check_examiner_objections, classes)
+    except Exception as e:
+        flags = []
+    return {"flags": flags, "db_available": resources_loaded()}
+
+
+# ── Single term checker ────────────────────────────────────────────────────────
+
+class TermCheckRequest(BaseModel):
+    term: str
+    nice_class: str = ""
+
+@app.post("/api/check-term")
+async def check_term_endpoint(body: TermCheckRequest):
+    """Evaluate a single goods/services term against CIPO practice."""
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not configured.")
+    import asyncio
+    try:
+        result = await asyncio.to_thread(check_single_term, body.term.strip(), body.nice_class.strip())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return result
+
+
+# ── Acceptance likelihood ──────────────────────────────────────────────────────
+
+class AcceptanceScoreRequest(BaseModel):
+    classes: list
+
+@app.post("/api/acceptance-score")
+async def acceptance_score_endpoint(body: AcceptanceScoreRequest):
+    """Score the likelihood that the current amended spec will be accepted by CIPO."""
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not configured.")
+    import asyncio
+    try:
+        result = await asyncio.to_thread(score_acceptance_likelihood, body.classes)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return result
 
 
 # ── Personal spec library endpoints ───────────────────────────────────────────

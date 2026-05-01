@@ -631,6 +631,55 @@
     .issue-type-tag.structural         { background: #dcfce7; color: #166534; }
     .issue-desc { flex: 1; color: #44403c; }
     .issue-fix  { color: #059669; font-style: italic; white-space: nowrap; }
+
+    /* Examiner error flags */
+    .examiner-errors { margin-top: 10px; border: 1px solid #bae6fd; border-radius: 6px; overflow: hidden; font-size: 0.82rem; }
+    .examiner-errors-header { background: #e0f2fe; padding: 7px 12px; cursor: pointer; font-weight: 600; color: #0369a1; display: flex; align-items: center; justify-content: space-between; }
+    .examiner-errors-body { padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; background: #f0f9ff; }
+    .error-flag-row { display: flex; gap: 8px; align-items: flex-start; }
+    .error-type-tag { flex-shrink: 0; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 1px 5px; border-radius: 3px; white-space: nowrap; }
+    .error-type-tag.verbatim      { background: #bbf7d0; color: #14532d; }
+    .error-type-tag.near_verbatim { background: #bfdbfe; color: #1e3a8a; }
+    .error-type-tag.possible_match{ background: #e0e7ff; color: #3730a3; }
+    .error-flag-content { flex: 1; }
+    .error-flag-term { font-family: monospace; font-size: 0.78rem; background: #fff; border: 1px solid #bae6fd; border-radius: 3px; padding: 1px 5px; color: #075985; margin-bottom: 3px; display: inline-block; }
+    .error-flag-desc { font-size: 0.79rem; color: #0c4a6e; line-height: 1.4; }
+    .error-pill { font-size: 0.72rem; font-weight: 600; background: #bae6fd; color: #0369a1; border-radius: 10px; padding: 1px 8px; cursor: default; margin-left: 6px; }
+
+    /* Acceptance score */
+    .acceptance-score-card { background: white; border-radius: 10px; padding: 20px 28px; box-shadow: 0 1px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .score-header { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+    .score-badge { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; flex-shrink: 0; }
+    .score-badge.green  { background: #dcfce7; color: #166534; border: 3px solid #86efac; }
+    .score-badge.amber  { background: #fef9c3; color: #854d0e; border: 3px solid #fde047; }
+    .score-badge.red    { background: #fee2e2; color: #991b1b; border: 3px solid #fca5a5; }
+    .score-summary { font-size: 0.9rem; color: #374151; flex: 1; }
+    .score-class-row { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; font-size: 0.82rem; }
+    .score-class-badge { background: #1a1a2e; color: white; font-size: 0.7rem; font-weight: 700; padding: 1px 7px; border-radius: 3px; }
+    .score-bar-wrap { flex: 1; background: #e5e7eb; border-radius: 10px; height: 8px; overflow: hidden; }
+    .score-bar { height: 100%; border-radius: 10px; transition: width 0.6s ease; }
+    .score-bar.green  { background: #22c55e; }
+    .score-bar.amber  { background: #eab308; }
+    .score-bar.red    { background: #ef4444; }
+    .score-pct { font-weight: 600; width: 36px; text-align: right; }
+    .score-deficiency { font-size: 0.78rem; color: #b45309; margin: 2px 0 2px 16px; }
+    .score-deficiency::before { content: "• "; }
+    .btn-score { background: #0369a1; color: white; border: none; padding: 8px 20px; border-radius: 7px; font-size: 0.85rem; cursor: pointer; font-weight: 600; transition: background 0.15s; }
+    .btn-score:hover { background: #0284c7; }
+    .btn-score:disabled { background: #bbb; cursor: not-allowed; }
+
+    /* Quick term checker */
+    .term-checker-card { background: white; border-radius: 10px; padding: 24px 28px; box-shadow: 0 1px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .term-checker-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; }
+    .term-checker-input { flex: 1; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 7px; font-size: 0.9rem; font-family: inherit; }
+    .term-checker-input:focus { outline: none; border-color: #4a6fa5; box-shadow: 0 0 0 2px rgba(74,111,165,0.15); }
+    .term-class-input { width: 80px; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 7px; font-size: 0.9rem; text-align: center; }
+    .term-result { margin-top: 14px; padding: 12px 14px; border-radius: 7px; font-size: 0.85rem; line-height: 1.55; }
+    .term-result.acceptable { background: #f0fdf4; border: 1px solid #86efac; color: #14532d; }
+    .term-result.not-acceptable { background: #fffbeb; border: 1px solid #fde047; color: #854d0e; }
+    .term-result .result-suggested { margin-top: 8px; font-weight: 600; }
+    .term-result .result-matches { margin-top: 8px; }
+    .term-result .match-item { font-family: monospace; font-size: 0.78rem; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 3px; margin: 2px 0; display: inline-block; }
   </style>
 </head>
 <body>
@@ -670,6 +719,18 @@
       <a href="#" onclick="document.getElementById('pdfDiagModal').style.display='flex';return false"
         style="font-size:0.78rem;color:#aaa">PDF underline diagnostic</a>
     </div>
+  </div>
+
+  <!-- Quick Term Checker -->
+  <div class="term-checker-card">
+    <h2>Quick Term Check</h2>
+    <p class="sub">Spot-check a single good or service without uploading a document. Enter the term as it would appear in a trademark spec.</p>
+    <div class="term-checker-row">
+      <input type="text" id="termCheckerInput" class="term-checker-input" placeholder="e.g. downloadable software for managing financial records" />
+      <input type="text" id="termCheckerClass" class="term-class-input" placeholder="Class" title="Optional: Nice Class number (e.g. 09)" />
+      <button class="btn" id="termCheckerBtn" style="margin-top:0;padding:9px 20px" onclick="checkSingleTerm()">Check</button>
+    </div>
+    <div id="termCheckerResult" style="display:none"></div>
   </div>
 
   <div id="results">
@@ -733,6 +794,16 @@
         Classes with objections are expanded. Click any highlighted term to view amendment suggestions. You can also type directly in the specification — additions appear in red, deletions in blue strikethrough.
       </p>
       <div id="specDoc"></div>
+    </div>
+
+    <!-- Acceptance Score Card -->
+    <div class="acceptance-score-card" id="acceptanceScoreCard" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h2 style="margin:0">Likelihood of Acceptance</h2>
+        <button class="btn-score" id="calcScoreBtn" onclick="calculateAcceptanceScore()">Calculate</button>
+      </div>
+      <p class="sub" style="margin-bottom:0">Estimates the probability CIPO will accept the current amended specification, and identifies any remaining deficiencies.</p>
+      <div id="acceptanceScoreResult" style="display:none;margin-top:16px"></div>
     </div>
 
     <div class="card" id="specLibraryCard">
@@ -1240,9 +1311,11 @@
     renderClasses(a.classes || []);
 
     resultsEl.style.display = "block";
+    document.getElementById('acceptanceScoreCard').style.display = 'block';
     resultsEl.scrollIntoView({ behavior: "smooth" });
     loadResearch(a.applicant_name, a.trademark_name);
     runGrammarCheck();
+    checkExaminerObjections();
   }
 
   function renderClasses(classes) {
@@ -2242,6 +2315,198 @@
       output.textContent = 'Error: ' + e.message;
     }
   }
+
+  // ── Examiner error detection ──────────────────────────────────────────────────
+
+  async function checkExaminerObjections() {
+    if (!currentAnalysis || !(currentAnalysis.classes || []).length) return;
+    try {
+      const res = await fetch('/api/check-objections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classes: currentAnalysis.classes }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const flags = data.flags || [];
+      if (!flags.length) return;
+
+      // Group by class and render
+      const byClass = {};
+      for (const f of flags) {
+        if (!byClass[f.nice_class]) byClass[f.nice_class] = [];
+        byClass[f.nice_class].push(f);
+      }
+      for (const [nc, classFlags] of Object.entries(byClass)) {
+        renderExaminerErrors(nc, classFlags);
+      }
+    } catch(e) { /* optional — fail silently */ }
+  }
+
+  function renderExaminerErrors(niceClass, flags) {
+    const details = document.querySelector(`.class-details[data-nice-class="${niceClass}"]`);
+    if (!details) return;
+
+    // Remove existing
+    const old = details.querySelector('.examiner-errors');
+    if (old) old.remove();
+    if (!flags || !flags.length) return;
+
+    // Add pill to summary
+    const oldPill = details.querySelector('.error-pill');
+    if (oldPill) oldPill.remove();
+    const pill = document.createElement('span');
+    pill.className = 'error-pill';
+    pill.title = 'Possible examiner error(s) detected';
+    pill.textContent = `⚑ ${flags.length} examiner error${flags.length !== 1 ? 's' : ''}`;
+    details.querySelector('.class-summary').appendChild(pill);
+
+    const matchLabel = { verbatim: 'Verbatim match', near_verbatim: 'Near-verbatim', possible_match: 'Possible match' };
+
+    const panel = document.createElement('div');
+    panel.className = 'examiner-errors';
+    panel.innerHTML = `
+      <div class="examiner-errors-header">
+        ⚑ ${flags.length} possible examiner error${flags.length !== 1 ? 's' : ''} — click to show/hide
+        <span style="font-size:0.72rem;font-weight:400;opacity:0.8">matches CIPO G&S Manual</span>
+      </div>
+      <div class="examiner-errors-body">
+        ${flags.map(f => `
+          <div class="error-flag-row">
+            <span class="error-type-tag ${esc(f.match_type)}">${esc(matchLabel[f.match_type] || f.match_type)}</span>
+            <div class="error-flag-content">
+              <div class="error-flag-term">${esc(f.term)}</div>
+              <div class="error-flag-desc">${esc(f.description)}</div>
+            </div>
+          </div>`).join('')}
+      </div>`;
+
+    panel.querySelector('.examiner-errors-header').addEventListener('click', function() {
+      const body = this.nextElementSibling;
+      body.style.display = body.style.display === 'none' ? '' : 'none';
+    });
+
+    // Insert before spec-issues (if exists), else append to spec-content
+    const specContent = details.querySelector('.spec-content');
+    const specIssues = specContent && specContent.querySelector('.spec-issues');
+    if (specIssues) {
+      specContent.insertBefore(panel, specIssues);
+    } else if (specContent) {
+      specContent.appendChild(panel);
+    }
+  }
+
+  // ── Single term checker ───────────────────────────────────────────────────────
+
+  async function checkSingleTerm() {
+    const input = document.getElementById('termCheckerInput');
+    const classInput = document.getElementById('termCheckerClass');
+    const btn = document.getElementById('termCheckerBtn');
+    const resultDiv = document.getElementById('termCheckerResult');
+    const term = (input.value || '').trim();
+    if (!term) { input.focus(); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+    resultDiv.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/check-term', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ term, nice_class: (classInput.value || '').trim() }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+
+      const ok = data.is_acceptable;
+      const matchesHtml = (data.gsm_matches || []).slice(0, 4).map(m =>
+        `<span class="match-item">(Class ${esc(String(m.nice_class))}) ${esc(m.term)} — ${Math.round(m.similarity * 100)}% match</span>`
+      ).join('');
+
+      const classesHtml = (data.suggested_nice_classes || []).length
+        ? `<div style="margin-top:6px">Suggested class${data.suggested_nice_classes.length > 1 ? 'es' : ''}: <strong>${data.suggested_nice_classes.join(', ')}</strong></div>` : '';
+
+      resultDiv.className = `term-result ${ok ? 'acceptable' : 'not-acceptable'}`;
+      resultDiv.innerHTML = `
+        <strong>${ok ? '✓ Acceptable' : '⚠ Not acceptable'}</strong> — ${esc(data.reason || '')}
+        ${data.suggested_term ? `<div class="result-suggested">→ Try: <em>${esc(data.suggested_term)}</em></div>` : ''}
+        ${data.specificity_note ? `<div style="margin-top:6px;font-size:0.78rem;color:#92400e">${esc(data.specificity_note)}</div>` : ''}
+        ${matchesHtml ? `<div class="result-matches" style="margin-top:8px"><strong>Closest CIPO G&S Manual entries:</strong><br>${matchesHtml}</div>` : ''}
+        ${classesHtml}`;
+      resultDiv.style.display = 'block';
+    } catch(e) {
+      resultDiv.className = 'term-result not-acceptable';
+      resultDiv.textContent = 'Error: ' + e.message;
+      resultDiv.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Check';
+    }
+  }
+
+  document.getElementById('termCheckerInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkSingleTerm();
+  });
+
+  // ── Acceptance score ──────────────────────────────────────────────────────────
+
+  async function calculateAcceptanceScore() {
+    if (!currentAnalysis || !(currentAnalysis.classes || []).length) return;
+    const btn = document.getElementById('calcScoreBtn');
+    const resultDiv = document.getElementById('acceptanceScoreResult');
+    btn.disabled = true;
+    btn.textContent = 'Calculating…';
+
+    const liveClasses = (currentAnalysis.classes || []).map(cls => ({
+      nice_class: cls.nice_class,
+      goods_or_services: cls.goods_or_services,
+      current_text: (classStates[cls.nice_class] || {}).currentText
+                    || extractPlainText(cls.marked_text || ''),
+    }));
+
+    try {
+      const res = await fetch('/api/acceptance-score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classes: liveClasses }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+
+      const overall = Math.min(100, Math.max(0, data.overall_score || 0));
+      const colorClass = overall >= 80 ? 'green' : overall >= 60 ? 'amber' : 'red';
+
+      let classesHtml = (data.classes || []).map(cls => {
+        const pct = Math.min(100, Math.max(0, cls.score || 0));
+        const cc = pct >= 80 ? 'green' : pct >= 60 ? 'amber' : 'red';
+        const defHtml = (cls.deficiencies || []).map(d =>
+          `<div class="score-deficiency">${esc(d)}</div>`).join('');
+        return `
+          <div class="score-class-row">
+            <span class="score-class-badge">Class ${esc(String(cls.nice_class))}</span>
+            <div class="score-bar-wrap"><div class="score-bar ${cc}" style="width:${pct}%"></div></div>
+            <span class="score-pct ${cc}">${pct}%</span>
+          </div>
+          ${defHtml}`;
+      }).join('');
+
+      resultDiv.innerHTML = `
+        <div class="score-header">
+          <div class="score-badge ${colorClass}">${overall}%</div>
+          <div class="score-summary">${esc(data.summary || '')}</div>
+        </div>
+        ${classesHtml}`;
+      resultDiv.style.display = 'block';
+    } catch(e) {
+      resultDiv.innerHTML = `<div style="color:#dc2626;font-size:0.85rem">Error: ${esc(e.message)}</div>`;
+      resultDiv.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Recalculate';
+    }
+  }
+
 </script>
 </body>
 </html>

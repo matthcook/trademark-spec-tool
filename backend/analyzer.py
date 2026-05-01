@@ -353,6 +353,282 @@ Return ONLY a JSON array — empty array [] if there are no issues:
     return json.loads(raw)
 
 
+# ── Examiner error detection ─────────────────────────────────────────────────
+
+def check_examiner_objections(classes: list[dict]) -> list[dict]:
+    """
+    For each objected term, search the CIPO G&S Manual database for a verbatim
+    or near-verbatim match. A match suggests the examiner may have objected in error
+    because the term is already a pre-approved CIPO formulation.
+    Returns list of {nice_class, term, match_type, cipo_entry, cipo_class,
+                     similarity, description, confidence}.
+    """
+    import difflib
+    try:
+        from cipo_resources import search_gsm, resources_loaded
+        if not resources_loaded():
+            return []
+    except ImportError:
+        return []
+
+    flags = []
+    for cls in classes:
+        nice_class = str(cls.get("nice_class", ""))
+        for t in (cls.get("objected_terms") or []):
+            term = (t.get("term") or "").strip()
+            if not term or len(term) < 4:
+                continue
+            term_lower = term.lower()
+
+            gsm_results = search_gsm(term, nice_class, limit=60)
+            if not gsm_results:
+                continue
+
+            best_match = None
+            best_ratio = 0.0
+            for entry in gsm_results:
+                entry_term = (entry.get("term") or "").lower().strip()
+                if not entry_term:
+                    continue
+                ratio = difflib.SequenceMatcher(None, term_lower, entry_term).ratio()
+                if ratio > best_ratio:
+                    best_ratio = ratio
+                    best_match = entry
+
+            if best_match is None or best_ratio < 0.82:
+                continue
+
+            matched_term = (best_match.get("term") or "").strip()
+            matched_class = str(best_match.get("nice_class") or "").lstrip("0") or nice_class
+
+            if best_ratio >= 0.97:
+                match_type = "verbatim"
+                confidence = "high"
+                desc = (f'This term appears verbatim in the CIPO G&S Manual '
+                        f'(Class {matched_class}): "{matched_term}"')
+            elif best_ratio >= 0.88:
+                match_type = "near_verbatim"
+                confidence = "high" if best_ratio >= 0.93 else "medium"
+                desc = (f'This term closely matches an accepted CIPO G&S Manual entry '
+                        f'(Class {matched_class}): "{matched_term}"')
+            else:
+                match_type = "possible_match"
+                confidence = "medium"
+                desc = (f'This term may correspond to a CIPO G&S Manual entry '
+                        f'(Class {matched_class}): "{matched_term}"')
+
+            flags.append({
+                "nice_class": nice_class,
+                "term": term,
+                "match_type": match_type,
+                "cipo_entry": matched_term,
+                "cipo_class": matched_class,
+                "similarity": round(best_ratio, 3),
+                "description": desc,
+                "confidence": confidence,
+            })
+
+    return flags
+
+
+# ── Single-term checker ───────────────────────────────────────────────────────
+
+def check_single_term(term: str, nice_class: str = "") -> dict:
+    """
+    Evaluate a single goods/services term against the CIPO G&S Manual and return
+    acceptability, closest matches, suggested rewrites, and probable Nice class.
+    """
+    import difflib
+    try:
+        from cipo_resources import search_gsm, search_gsm_fts, resources_loaded
+        db_available = resources_loaded()
+    except ImportError:
+        db_available = False
+
+    gsm_matches = []
+    if db_available:
+        raw = search_gsm(term, nice_class or None, limit=10)
+        for entry in raw:
+            entry_term = (entry.get("term") or "").strip()
+            ratio = difflib.SequenceMatcher(None, term.lower(), entry_term.lower()).ratio()
+            gsm_matches.append({
+                "term": entry_term,
+                "nice_class": str(entry.get("nice_class") or "").lstrip("0"),
+                "similarity": round(ratio, 3),
+            })
+        gsm_matches.sort(key=lambda x: -x["similarity"])
+
+    # Determine if there's an exact/near-exact match in the DB already
+    best_ratio = gsm_matches[0]["similarity"] if gsm_matches else 0.0
+    db_acceptable = best_ratio >= 0.95
+
+    matches_text = "\n".join(
+        f'  - (Class {m["nice_class"]}) {m["term"]} [similarity {m["similarity"]:.0%}]'
+        for m in gsm_matches[:6]
+    ) or "  (no close matches found)"
+
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    prompt = f"""You are a Canadian trademark agent with expert knowledge of CIPO specification requirements.
+
+Evaluate this proposed goods/services term for a Canadian trademark application:
+  Term: "{term}"
+{f'  Proposed Nice Class: {nice_class}' if nice_class else '  (No class specified)'}
+
+Closest entries found in the CIPO G&S Manual:
+{matches_text}
+
+Return ONLY valid JSON (no markdown):
+{{
+  "is_acceptable": true or false,
+  "reason": "one sentence — why it is or is not acceptable under CIPO practice",
+  "suggested_term": "improved CIPO-style term if needed, or null if already acceptable",
+  "suggested_nice_classes": ["29"],
+  "specificity_note": "brief note on specificity if relevant, else null"
+}}"""
+
+    message = _claude_create_with_retry(
+        client,
+        model="claude-sonnet-4-6",
+        max_tokens=400,
+        temperature=0,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    raw = ""
+    for block in message.content:
+        if hasattr(block, "text") and block.text:
+            raw = block.text.strip()
+            break
+
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    raw = raw.strip()
+
+    try:
+        claude_result = json.loads(raw)
+    except Exception:
+        m = re.search(r'\{[\s\S]*\}', raw)
+        try:
+            claude_result = json.loads(m.group(0)) if m else {}
+        except Exception:
+            claude_result = {}
+
+    return {
+        "term": term,
+        "nice_class": nice_class,
+        "gsm_matches": gsm_matches[:6],
+        "db_acceptable": db_acceptable,
+        "is_acceptable": claude_result.get("is_acceptable", db_acceptable),
+        "reason": claude_result.get("reason", ""),
+        "suggested_term": claude_result.get("suggested_term"),
+        "suggested_nice_classes": claude_result.get("suggested_nice_classes", []),
+        "specificity_note": claude_result.get("specificity_note"),
+    }
+
+
+# ── Acceptance likelihood scorer ──────────────────────────────────────────────
+
+def score_acceptance_likelihood(classes: list[dict]) -> dict:
+    """
+    Estimate the likelihood that the current amended specification will be accepted
+    by CIPO. Returns an overall percentage score plus per-class scores and any
+    remaining deficiencies.
+    """
+    import difflib
+    try:
+        from cipo_resources import search_gsm, resources_loaded
+        db_available = resources_loaded()
+    except ImportError:
+        db_available = False
+
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+    spec_lines = []
+    for cls in classes:
+        raw = cls.get("current_text") or cls.get("marked_text", "") or ""
+        text = re.sub(r'\{\{([^}]+)\}\}', r'\1', raw).strip()
+        if text:
+            spec_lines.append(f"Class {cls.get('nice_class', '?')}: {text}")
+
+    if not spec_lines:
+        return {"overall_score": 0, "classes": [], "deficiencies": []}
+
+    # For each class, get top GSM matches to inform Claude
+    gsm_context = []
+    if db_available:
+        for cls in classes:
+            raw = cls.get("current_text") or cls.get("marked_text", "") or ""
+            text = re.sub(r'\{\{([^}]+)\}\}', r'\1', raw).strip()
+            nc = str(cls.get("nice_class", ""))
+            for term in text.split(";"):
+                term = term.strip()
+                if not term:
+                    continue
+                hits = search_gsm(term, nc, limit=3)
+                if hits:
+                    best = hits[0]
+                    ratio = difflib.SequenceMatcher(None, term.lower(), (best.get("term") or "").lower()).ratio()
+                    if ratio >= 0.85:
+                        gsm_context.append(f'  Class {nc}: "{term}" → accepted GSM entry: "{best.get("term")}"')
+
+    gsm_section = ("\n\nCIPO G&S Manual matches for reference:\n" + "\n".join(gsm_context[:20])) if gsm_context else ""
+
+    prompt = f"""You are a senior Canadian trademark agent evaluating a trademark specification that has been amended in response to a CIPO office action. Estimate the likelihood that CIPO will accept this amended specification.{gsm_section}
+
+AMENDED SPECIFICATION:
+{chr(10).join(spec_lines)}
+
+For each class, and overall, estimate the likelihood of acceptance as a percentage (0–100%). Consider:
+- Whether each term is specific enough for CIPO (not vague or broad)
+- Whether each term corresponds to known accepted CIPO language
+- Whether terms are properly structured (correct grammar, no duplicates)
+- Canadian trademark examination practice
+
+Return ONLY valid JSON (no markdown):
+{{
+  "overall_score": 85,
+  "classes": [
+    {{
+      "nice_class": "29",
+      "score": 90,
+      "deficiencies": [
+        "One precise sentence describing a remaining problem, if any"
+      ]
+    }}
+  ],
+  "summary": "One sentence overall assessment"
+}}"""
+
+    message = _claude_create_with_retry(
+        client,
+        model="claude-sonnet-4-6",
+        max_tokens=1200,
+        temperature=0,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    raw = ""
+    for block in message.content:
+        if hasattr(block, "text") and block.text:
+            raw = block.text.strip()
+            break
+
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    raw = raw.strip()
+
+    try:
+        return json.loads(raw)
+    except Exception:
+        m = re.search(r'\{[\s\S]*\}', raw)
+        try:
+            return json.loads(m.group(0)) if m else {"overall_score": 0, "classes": [], "summary": ""}
+        except Exception:
+            return {"overall_score": 0, "classes": [], "summary": ""}
+
+
 # ── Personal spec library parsing ────────────────────────────────────────────
 
 def parse_spec_into_terms(text: str) -> list[dict]:
